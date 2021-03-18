@@ -500,6 +500,7 @@ def _start_de_server(global_config, channel_config_loader):
     try:
         server = _create_de_server(global_config, channel_config_loader)
         server.reaper_start(delay=global_config['dataspace'].get('reaper_start_delay_seconds', 1818))
+        # TODO: This is where we should start all the sources that the channels will use
         server.start_channels()
         server.serve_forever()
     except Exception as e:  # pragma: no cover

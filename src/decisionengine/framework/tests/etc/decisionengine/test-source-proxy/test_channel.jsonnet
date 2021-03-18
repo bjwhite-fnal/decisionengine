@@ -6,7 +6,7 @@
       parameters: {
         sleep_for: 5
       },
-      schedule: 1
+      schedule: 5000
     }
   },
 

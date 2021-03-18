@@ -44,6 +44,8 @@ class SourceProxy(Source.Source):
         if not set(must_have).issubset(set(args[0].keys())):
             raise RuntimeError(
                 'SourceProxy misconfigured. Must have {} defined'.format(must_have))
+        # Initialize the base parameters to something just to make Source/SourceProxy compatible with checking params hashes
+        super().__init__(kwargs)
         self.source_channel = args[0]['channel_name']
         self.data_keys = args[0]['Dataproducts']
         self.retries = args[0].get('retries', RETRIES)

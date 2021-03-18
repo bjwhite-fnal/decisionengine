@@ -7,6 +7,8 @@ import logging
 import time
 import multiprocessing
 import uuid
+import hashlib
+import queue
 
 import pandas
 
@@ -14,6 +16,8 @@ from decisionengine.framework.dataspace import dataspace
 from decisionengine.framework.dataspace import datablock
 from decisionengine.framework.taskmanager.ProcessingState import State
 from decisionengine.framework.taskmanager.ProcessingState import ProcessingState
+from decisionengine.framework.modules.Source import Source
+from decisionengine.framework.modules.SourceProxy import SourceProxy
 
 _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
@@ -30,7 +34,7 @@ def _create_worker(module_name, class_name, parameters):
 
 class Worker:
     """
-    Provides interface to loadable modules an events to sycronise
+    Provides an interface to loadable modules and events to synchronize
     execution
     """
 
@@ -47,8 +51,12 @@ class Worker:
         self.name = self.worker.__class__.__name__
         self.schedule = conf_dict.get('schedule', _DEFAULT_SCHEDULE)
         self.run_counter = 0
-        self.data_updated = threading.Event()
-        self.stop_running = threading.Event()
+        if issubclass(self.worker.__class__, Source):
+            self.data_updated = multiprocessing.Event()
+            self.stop_running = multiprocessing.Event()
+        else:
+            self.data_updated = threading.Event()
+            self.stop_running = threading.Event()
         logging.getLogger("decision_engine").debug('Creating worker: module=%s name=%s parameters=%s schedule=%s',
                                                    self.module, self.name, conf_dict['parameters'], self.schedule)
 
@@ -107,6 +115,10 @@ class TaskManager:
         self.state = ProcessingState()
         self.loglevel = multiprocessing.Value('i', logging.WARNING)
         self.lock = threading.Lock()
+        self.all_source_procs = {}
+        self.source_process_generated_products = multiprocessing.Queue()
+        self.listener_stop_running = threading.Event()
+
         # The rest of this function will go away once the source-proxy
         # has been reimplemented.
         for src_worker in self.channel.sources.values():
@@ -159,14 +171,16 @@ class TaskManager:
         """
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Task Manager {self.id}')
-        done_events, source_threads = self.start_sources(self.data_block_t0)
+        source_listener = self.start_source_listener()
+        done_events, source_procs = self.start_sources()
         # This is a boot phase
         # Wait until all sources run at least one time
         self.wait_for_all(done_events)
         logging.getLogger().info('All sources finished')
         if not self.state.has_value(State.BOOT):
-            for thread in source_threads:
-                thread.join()
+            source_listener.join()
+            for proc in source_procs:
+                proc.join()
             logging.getLogger().error(
                 f'Error occured during initial run of sources. Task Manager {self.name} exits')
             return
@@ -180,6 +194,7 @@ class TaskManager:
                 self.decision_cycle()
                 if self.state.should_stop():
                     logging.getLogger().info(f'Task Manager {self.id} received stop signal and exits')
+                    self.listener_stop_running.set()
                     for source in self.channel.sources.values():
                         source.stop_running.set()
                         time.sleep(5)
@@ -193,8 +208,9 @@ class TaskManager:
                                           self.id, self.get_state_name())
                 break
             time.sleep(1)
-        for thread in source_threads:
-            thread.join()
+        source_listener.join()
+        for proc in source_procs:
+            proc.join()
 
     def get_state_value(self):
         with self.state.get_lock():
@@ -261,6 +277,7 @@ class TaskManager:
             logging.getLogger().debug(f'Duplicated block {data_block}')
         return data_block
 
+
     def decision_cycle(self):
         """
         Decision cycle to be run periodically (by trigger)
@@ -291,10 +308,32 @@ class TaskManager:
                 logging.getLogger().exception("error in decision cycle(publishers) ")
                 self.take_offline(data_block_t1)
 
+
+    def start_source_listener(self):
+        source_listener = threading.Thread(target=self.run_source_data_listener,
+                                           name='source-data-listener',
+                                           args=())
+        source_listener.start()
+        return source_listener
+
+
+    def run_source_data_listener(self):
+        """
+        Watch the interprocess Queue for data products to be inserted into this TaskManager's t0 data block
+        """
+        # If task manager is in offline state, do not keep updating the task manager t0 data block
+        while not self.listener_stop_running.is_set():
+            try:
+                block_info = self.source_process_generated_products.get(timeout=1)
+                self.data_block_put(block_info['data'], block_info['header'], self.data_block_t0)
+            except queue.Empty:
+                # This is fine, we just need to not block so that we can check and see if we should shut down yet
+                pass
+
+
     def run_source(self, src):
         """
-        Get the data from source
-        and put it into the data block
+        Get the data from source and communicate it back to the TaskManager process
 
         :type src: :obj:`~Worker`
         :arg src: source Worker
@@ -312,7 +351,8 @@ class TaskManager:
                     header = datablock.Header(self.data_block_t0.taskmanager_id,
                                               create_time=t, creator=src.module)
                     logging.getLogger().info(f'Src {src.name} header done')
-                    self.data_block_put(data, header, self.data_block_t0)
+                    block_info = { 'data': data, 'header': header }
+                    self.source_process_generated_products.put(block_info)
                     logging.getLogger().info(f'Src {src.name} data block put done')
                 else:
                     logging.getLogger().warning(f'Src {src.name} acquire retuned no data')
@@ -332,27 +372,43 @@ class TaskManager:
                 break
         logging.getLogger().info(f'stopped {src.name}')
 
-    def start_sources(self, data_block=None):
+    def _start_source(self, source):
         """
-        Start sources, each in a separate thread
+        Start a single source, checking if there is a preexisting instantiation of the same source.
 
-        :type data_block: :obj:`~datablock.DataBlock`
-        :arg data_block: data block
+        :type source: :obj:`~taskmanager.Worker`
+        :arg source: Worker encapsulating the source to be started
+        """
+        # TODO: source_parameters = filter(source.worker.get_parameters(), self.source_significant_parameters)
+        params_dict = source.worker.get_parameters()
+        params = sorted(list(params_dict.items()))
+        source_hash = hashlib.md5(str(params).encode('utf-8'))
+        if source_hash and source_hash in self.all_source_procs:
+            proc = self.all_source_procs[source_hash]
+        else:
+            proc = multiprocessing.Process(target=self.run_source,
+                                      name=source.name,
+                                      args=(source,))
+            self.all_source_procs[source_hash] = proc
+            # Cannot catch exception from function called in separate thread
+            proc.start()
+
+        return proc
+
+    def start_sources(self):
+        """
+        Start sources, each in a separate process
         """
 
         event_list = []
-        source_threads = []
+        source_procs = []
 
         for key, source in self.channel.sources.items():
             logging.getLogger().info(f'starting loop for {key}')
             event_list.append(source.data_updated)
-            thread = threading.Thread(target=self.run_source,
-                                      name=source.name,
-                                      args=(source,))
-            source_threads.append(thread)
-            # Cannot catch exception from function called in separate thread
-            thread.start()
-        return (event_list, source_threads)
+            proc = self._start_source(source)
+            source_procs.append(proc)
+        return (event_list, source_procs)
 
     def run_transforms(self, data_block=None):
         """
