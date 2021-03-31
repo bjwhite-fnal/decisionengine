@@ -8,7 +8,7 @@ from decisionengine.framework.dataspace.datasources.tests.fixtures import mock_d
 from decisionengine.framework.engine.DecisionEngine import _get_de_conf_manager
 from decisionengine.framework.engine.DecisionEngine import _create_de_server
 from decisionengine.framework.engine.DecisionEngine import parse_program_options
-from decisionengine.framework.taskmanager.TaskManager import State
+from decisionengine.framework.managers.ChannelManager import State
 from decisionengine.framework.util.sockets import get_random_port
 
 _this_dir = pathlib.Path(__file__).parent.resolve()

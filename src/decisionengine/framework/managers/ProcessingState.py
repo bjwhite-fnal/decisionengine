@@ -1,5 +1,5 @@
 '''
-The ProcessingState class can represent any of the following task-manager states:
+The ProcessingState class can represent any of the following ChannelManager states:
 
   BOOT
   STEADY

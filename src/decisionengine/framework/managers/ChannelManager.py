@@ -1,5 +1,5 @@
 """
-Task Manager
+Channel Manager
 """
 import importlib
 import threading
@@ -12,8 +12,8 @@ import pandas
 
 from decisionengine.framework.dataspace import dataspace
 from decisionengine.framework.dataspace import datablock
-from decisionengine.framework.taskmanager.ProcessingState import State
-from decisionengine.framework.taskmanager.ProcessingState import ProcessingState
+from decisionengine.framework.managers.ProcessingState import State
+from decisionengine.framework.managers.ProcessingState import ProcessingState
 
 _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
@@ -77,20 +77,20 @@ class Channel:
         self.le_s = _make_workers_for(channel_dict['logicengines'])
         logging.getLogger("decision_engine").debug('Creating channel publisher')
         self.publishers = _make_workers_for(channel_dict['publishers'])
-        self.task_manager = channel_dict.get('task_manager', {})
+        self.channel_manager = channel_dict.get('channel_manager', {})
 
 
-class TaskManager:
+class ChannelManager:
     """
-    Task Manager
+    Channel Manager: Runs decision cycle for transforms and publishers
     """
 
     def __init__(self, name, generation_id, channel_dict, global_config):
         """
         :type name: :obj:`str`
-        :arg name: Name of channel corresponding to this task manager
+        :arg name: Name of channel corresponding to this channel manager
         :type generation_id: :obj:`int`
-        :arg generation_id: Task Manager generation id provided by caller
+        :arg generation_id: Channel Manager generation id provided by caller
         :type channel_dict: :obj:`dict`
         :arg channel_dict: channel configuration
         :type global_config: :obj:`dict`
@@ -119,7 +119,7 @@ class TaskManager:
         :type events_done: :obj:`list`
         :arg events_done: list of events to wait for
         """
-        logging.getLogger().info('Waiting for all tasks to run')
+        logging.getLogger().info('Waiting for all channels to run')
 
         try:
             while not all([e.is_set() for e in events_done]):
@@ -155,10 +155,10 @@ class TaskManager:
 
     def run(self):
         """
-        Task Manager main loop
+        Channel Manager main loop
         """
         logging.getLogger().setLevel(self.loglevel.value)
-        logging.getLogger().info(f'Starting Task Manager {self.id}')
+        logging.getLogger().info(f'Starting Channel Manager {self.id}')
         done_events, source_threads = self.start_sources(self.data_block_t0)
         # This is a boot phase
         # Wait until all sources run at least one time
@@ -168,7 +168,7 @@ class TaskManager:
             for thread in source_threads:
                 thread.join()
             logging.getLogger().error(
-                f'Error occured during initial run of sources. Task Manager {self.name} exits')
+                f'Error occured during initial run of sources. Channel Manager {self.name} exits')
             return
 
         self.decision_cycle()
@@ -179,7 +179,7 @@ class TaskManager:
                 self.wait_for_any(done_events)
                 self.decision_cycle()
                 if self.state.should_stop():
-                    logging.getLogger().info(f'Task Manager {self.id} received stop signal and exits')
+                    logging.getLogger().info(f'Channel Manager {self.id} received stop signal and exits')
                     for source in self.channel.sources.values():
                         source.stop_running.set()
                         time.sleep(5)
@@ -188,8 +188,8 @@ class TaskManager:
                         time.sleep(5)
                     break
             except Exception:  # pragma: no cover
-                logging.getLogger().exception("Exception in the task manager main loop")
-                logging.getLogger().error('Error occured. Task Manager %s exits with state %s',
+                logging.getLogger().exception("Exception in the channel manager main loop")
+                logging.getLogger().error('Error occured. Channel Manager %s exits with state %s',
                                           self.id, self.get_state_name())
                 break
             time.sleep(1)
@@ -219,7 +219,7 @@ class TaskManager:
 
     def take_offline(self, current_data_block):
         """
-        offline and stop task manager
+        offline and stop channel manager
         """
         self.state.set(State.OFFLINE)
         # invalidate data block
@@ -242,7 +242,7 @@ class TaskManager:
             return
         logging.getLogger().debug(f'data_block_put {data}')
         with data_block.lock:
-            metadata = datablock.Metadata(data_block.taskmanager_id,
+            metadata = datablock.Metadata(data_block.channel_manager_id,
                                           state='END_CYCLE',
                                           generation_id=data_block.generation_id)
             for key, product in data.items():
@@ -300,7 +300,7 @@ class TaskManager:
         :arg src: source Worker
         """
 
-        # If task manager is in offline state, do not keep executing sources.
+        # If channel manager is in offline state, do not keep executing sources.
         while not self.state.should_stop():
             try:
                 logging.getLogger().info(f'Src {src.name} calling acquire')
@@ -309,7 +309,7 @@ class TaskManager:
                 logging.getLogger().info(f'Src {src.name} filling header')
                 if data:
                     t = time.time()
-                    header = datablock.Header(self.data_block_t0.taskmanager_id,
+                    header = datablock.Header(self.data_block_t0.channel_manager_id,
                                               create_time=t, creator=src.module)
                     logging.getLogger().info(f'Src {src.name} header done')
                     self.data_block_put(data, header, self.data_block_t0)
@@ -393,7 +393,7 @@ class TaskManager:
         :type data_block: :obj:`~datablock.DataBlock`
         :arg data_block: data block
         """
-        data_to = self.channel.task_manager.get('data_TO', _TRANSFORMS_TO)
+        data_to = self.channel.channel_manager.get('data_TO', _TRANSFORMS_TO)
         consume_keys = transform.worker.consumes()
 
         logging.getLogger().info('transform: %s expected keys: %s provided keys: %s',
@@ -409,7 +409,7 @@ class TaskManager:
                         data = transform.worker.transform(data_block)
                     logging.getLogger().debug(f'transform returned {data}')
                     t = time.time()
-                    header = datablock.Header(data_block.taskmanager_id,
+                    header = datablock.Header(data_block.channel_manager_id,
                                               create_time=t,
                                               creator=transform.name)
                     self.data_block_put(data, header, data_block)
@@ -466,7 +466,7 @@ class TaskManager:
 
             data = {'de_logicengine_facts': all_facts}
             t = time.time()
-            header = datablock.Header(data_block.taskmanager_id,
+            header = datablock.Header(data_block.channel_manager_id,
                                       create_time=t, creator='logicengine')
             self.data_block_put(data, header, data_block)
         except Exception:  # pragma: no cover
@@ -497,7 +497,7 @@ class TaskManager:
                         publisher.worker.publish(data_block)
                     except KeyError as e:
                         if self.state.should_stop():
-                            log.warning(f"TaskManager stopping, ignore exception {name} publish() call: {e}")
+                            log.warning(f"ChannelManager stopping, ignore exception {name} publish() call: {e}")
                             continue
                         else:
                             raise

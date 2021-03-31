@@ -12,7 +12,7 @@ import decisionengine.framework.engine.de_client as de_client
 from decisionengine.framework.dataspace.datasources.tests.fixtures import DE_DB_HOST, DE_DB_USER, DE_DB_PASS, DE_DB_NAME, DE_SCHEMA, PG_PROG, DE_DB
 from decisionengine.framework.engine.DecisionEngine import _get_de_conf_manager, _create_de_server, parse_program_options
 from decisionengine.framework.util.sockets import get_random_port
-from decisionengine.framework.taskmanager.TaskManager import State
+from decisionengine.framework.managers.ChannelManager import State
 
 __all__ = ['DE_DB_HOST', 'DE_DB_USER', 'DE_DB_PASS', 'DE_DB_NAME', 'DE_SCHEMA',
            'PG_PROG', 'DE_DB', 'DE_HOST', 'DEServer']

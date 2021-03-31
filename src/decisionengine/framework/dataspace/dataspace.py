@@ -102,7 +102,7 @@ class DataSpace():
                                                                self._db_driver_name,
                                                                self._db_driver_config)
 
-        # Datablocks, current and previous, keyed by taskmanager_ids
+        # Datablocks, current and previous, keyed by channel_manager_ids
         self.curr_datablocks = {}
         self.prev_datablocks = {}
 
@@ -125,71 +125,71 @@ class DataSpace():
     def __str__(self):
         return '%s' % vars(self)
 
-    def insert(self, taskmanager_id, generation_id, key,
+    def insert(self, channel_manager_id, generation_id, key,
                value, header, metadata):
         try:
-            self.datasource.insert(taskmanager_id, generation_id, key,
+            self.datasource.insert(channel_manager_id, generation_id, key,
                                    value, header, metadata)
         except Exception:
             self.logger.exception("Error in dataspace insert!")
             raise
 
-    def update(self, taskmanager_id, generation_id, key,
+    def update(self, channel_manager_id, generation_id, key,
                value, header, metadata):
         try:
-            self.datasource.update(taskmanager_id, generation_id, key,
+            self.datasource.update(channel_manager_id, generation_id, key,
                                    value, header, metadata)
         except Exception:
             self.logger.exception("Error in dataspace update!")
             raise
 
-    def get_dataproduct(self, taskmanager_id, generation_id, key):
-        return self.datasource.get_dataproduct(taskmanager_id, generation_id, key)
+    def get_dataproduct(self, channel_manager_id, generation_id, key):
+        return self.datasource.get_dataproduct(channel_manager_id, generation_id, key)
 
-    def get_dataproducts(self, taskmanager_id):
-        return self.datasource.get_dataproducts(taskmanager_id)
+    def get_dataproducts(self, channel_manager_id):
+        return self.datasource.get_dataproducts(channel_manager_id)
 
-    def get_header(self, taskmanager_id, generation_id, key):
-        return self.datasource.get_header(taskmanager_id, generation_id, key)
+    def get_header(self, channel_manager_id, generation_id, key):
+        return self.datasource.get_header(channel_manager_id, generation_id, key)
 
-    def get_metadata(self, taskmanager_id, generation_id, key):
-        return self.datasource.get_metadata(taskmanager_id, generation_id, key)
+    def get_metadata(self, channel_manager_id, generation_id, key):
+        return self.datasource.get_metadata(channel_manager_id, generation_id, key)
 
-    def duplicate_datablock(self, taskmanager_id, generation_id,
+    def duplicate_datablock(self, channel_manager_id, generation_id,
                             new_generation_id):
-        return self.datasource.duplicate_datablock(taskmanager_id, generation_id,
+        return self.datasource.duplicate_datablock(channel_manager_id, generation_id,
                                                    new_generation_id)
 
-    def delete(self, taskmanager_id, all_generations=False):
+    def delete(self, channel_manager_id, all_generations=False):
         # Remove the latest generation of the datablock
         # If asked, remove all generations of the datablock
         pass
 
-    def mark_expired(self, taskmanager_id, generation_id, key, expiry_time):
+    def mark_expired(self, channel_manager_id, generation_id, key, expiry_time):
         pass
 
-    def mark_demented(self, taskmanager_id, keys, generation_id=None):
+    def mark_demented(self, channel_manager_id, keys, generation_id=None):
         if not generation_id:
-            generation_id = self.curr_datablocks[taskmanager_id].generation_id
-        self.datasource.mark_demented(taskmanager_id, generation_id, keys)
+            generation_id = self.curr_datablocks[channel_manager_id].generation_id
+        self.datasource.mark_demented(channel_manager_id, generation_id, keys)
 
     def close(self):
         self.datasource.close()
 
-    def store_taskmanager(self, name, id):
-        return self.datasource.store_taskmanager(name, id)
+    def store_channel_manager(self, name, id):
+        return self.datasource.store_channel_manager(name, id)
 
     def get_last_generation_id(self,
-                               taskmanager_name,
-                               taskmanager_id=None):
-        return self.datasource.get_last_generation_id(taskmanager_name,
-                                                      taskmanager_id)
+                               channel_manager_name,
+                               channel_manager_id=None):
+        return self.datasource.get_last_generation_id(channel_manager_name,
+                                                      channel_manager_id)
 
-    def get_taskmanager(self, taskmanager_name, taskmanager_id=None):
-        return self.datasource.get_taskmanager(taskmanager_name, taskmanager_id)
+    def get_channel_manager(self, channel_manager_name, channel_manager_id=None):
+        return self.datasource.get_channel_manager(channel_manager_name, channel_manager_id)
 
-    def get_taskmanagers(self, taskmanager_name=None, start_time=None, end_time=None):
-        return self.datasource.get_taskmanagers(taskmanager_name, start_time, end_time)
+    def get_channel_managers(self, channel_manager_name=None, start_time=None, end_time=None):
+        return self.datasource.get_channel_managers(channel_manager_name, start_time, end_time)
 
 
 MIN_RETENTION_INTERVAL_DAYS = 7

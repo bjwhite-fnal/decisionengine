@@ -17,7 +17,7 @@ import decisionengine.framework.util.fs as fs
 import decisionengine.framework.util.tsort as tsort
 
 _MANDATORY_CHANNEL_KEYS = {'sources', 'logicengines', 'transforms', 'publishers'}
-_ALLOWED_CHANNEL_KEYS = _MANDATORY_CHANNEL_KEYS | {'task_manager'}
+_ALLOWED_CHANNEL_KEYS = _MANDATORY_CHANNEL_KEYS | {'channel_manager'}
 _MANDATORY_MODULE_KEYS = {"module", "name", "parameters"}
 
 def _make_de_logger(global_config):

@@ -1,21 +1,21 @@
-DROP INDEX IF EXISTS i_taskmanager_datestamp;
-DROP TABLE IF EXISTS taskmanager;
-CREATE TABLE taskmanager (
+DROP INDEX IF EXISTS i_channel_manager_datestamp;
+DROP TABLE IF EXISTS channel_manager;
+CREATE TABLE channel_manager (
    sequence_id BIGSERIAL,
-   taskmanager_id character varying(36),
+   channel_manager_id character varying(36),
    name text,
    datestamp timestamp with time zone default NOW()
 );
 
-ALTER TABLE ONLY taskmanager
-      ADD CONSTRAINT pk_taskmanager PRIMARY KEY (sequence_id);
+ALTER TABLE ONLY channel_manager
+      ADD CONSTRAINT pk_channel_manager PRIMARY KEY (sequence_id);
 
-CREATE INDEX i_taskmanager_datestamp ON taskmanager(datestamp);
+CREATE INDEX i_channel_manager_datestamp ON channel_manager(datestamp);
 
-DROP INDEX IF EXISTS i_header_taskmanager_id;
+DROP INDEX IF EXISTS i_header_channel_manager_id;
 DROP TABLE IF EXISTS header;
 CREATE TABLE header (
-    taskmanager_id BIGINT,
+    channel_manager_id BIGINT,
     generation_id INTEGER,
     key TEXT,
     create_time BIGINT,
@@ -26,11 +26,11 @@ CREATE TABLE header (
     );
 
 ALTER TABLE ONLY header
-    ADD CONSTRAINT header_taskmanager_id_fkey FOREIGN KEY (taskmanager_id)
-    REFERENCES taskmanager(sequence_id)
+    ADD CONSTRAINT header_channel_manager_id_fkey FOREIGN KEY (channel_manager_id)
+    REFERENCES channel_manager(sequence_id)
     ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX i_header_taskmanager_id ON header(taskmanager_id);
+CREATE INDEX i_header_channel_manager_id ON header(channel_manager_id);
 
 DROP TABLE IF EXISTS schema;
 CREATE TABLE schema (
@@ -38,10 +38,10 @@ CREATE TABLE schema (
     schema BYTEA
     );
 
-DROP INDEX IF EXISTS i_metadata_taskmanager_id;
+DROP INDEX IF EXISTS i_metadata_channel_manager_id;
 DROP TABLE IF EXISTS metadata;
 CREATE TABLE metadata (
-    taskmanager_id BIGINT,
+    channel_manager_id BIGINT,
     generation_id INTEGER,
     key TEXT,
     state TEXT,
@@ -50,49 +50,49 @@ CREATE TABLE metadata (
     );
 
 ALTER TABLE ONLY metadata
-    ADD CONSTRAINT metadata_taskmanager_id_fkey FOREIGN KEY (taskmanager_id)
-    REFERENCES taskmanager(sequence_id)
+    ADD CONSTRAINT metadata_channel_manager_id_fkey FOREIGN KEY (channel_manager_id)
+    REFERENCES channel_manager(sequence_id)
     ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX i_metadata_taskmanager_id ON metadata(taskmanager_id);
+CREATE INDEX i_metadata_channel_manager_id ON metadata(channel_manager_id);
 
-DROP INDEX IF EXISTS i_dataproduct_taskmanager_id;
+DROP INDEX IF EXISTS i_dataproduct_channel_manager_id;
 DROP TABLE IF EXISTS dataproduct;
 CREATE TABLE dataproduct (
-    taskmanager_id BIGINT,
+    channel_manager_id BIGINT,
     generation_id INTEGER,
     key TEXT,
     value BYTEA
     );
 
 ALTER TABLE ONLY dataproduct
-    ADD CONSTRAINT dataproduct_taskmanager_id_fkey FOREIGN KEY (taskmanager_id)
-    REFERENCES taskmanager(sequence_id)
+    ADD CONSTRAINT dataproduct_channel_manager_id_fkey FOREIGN KEY (channel_manager_id)
+    REFERENCES channel_manager(sequence_id)
     ON UPDATE CASCADE ON DELETE CASCADE;
 
-CREATE INDEX i_dataproduct_taskmanager_id ON dataproduct(taskmanager_id);
+CREATE INDEX i_dataproduct_channel_manager_id ON dataproduct(channel_manager_id);
 
 DROP FUNCTION IF EXISTS f_id2sequence;
 CREATE FUNCTION f_id2sequence(character varying) RETURNS BIGINT
     LANGUAGE sql
     AS $_$
-                SELECT sequence_id FROM taskmanager WHERE taskmanager_id = $1;
+                SELECT sequence_id FROM channel_manager WHERE channel_manager_id = $1;
             $_$;
 
 
-DROP FUNCTION IF EXISTS f_get_current_task_sequence;
-CREATE FUNCTION f_get_current_task_sequence(character varying) RETURNS BIGINT
+DROP FUNCTION IF EXISTS f_get_current_channel_sequence;
+CREATE FUNCTION f_get_current_channel_sequence(character varying) RETURNS BIGINT
     LANGUAGE sql
     AS $_$
-                SELECT max(sequence_id) FROM taskmanager WHERE name = $1;
+                SELECT max(sequence_id) FROM channel_manager WHERE name = $1;
             $_$;
 
-DROP FUNCTION IF EXISTS f_get_current_task_id;
-CREATE FUNCTION f_get_current_task_id(character varying) RETURNS CHARACTER VARYING
+DROP FUNCTION IF EXISTS f_get_current_channel_id;
+CREATE FUNCTION f_get_current_channel_id(character varying) RETURNS CHARACTER VARYING
     LANGUAGE sql
     AS $_$
-                SELECT taskmanager_id FROM taskmanager
-		WHERE sequence_id  = f_get_current_task_sequence($1);
+                SELECT channel_manager_id FROM channel_manager
+		WHERE sequence_id  = f_get_current_channel_sequence($1);
             $_$;
 
 

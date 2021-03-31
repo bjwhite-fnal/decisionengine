@@ -105,13 +105,13 @@ class SourceProxy(Source.Source):
         data_block = None
         for _ in range(self.retries):
             try:
-                tm = self.dataspace.get_taskmanager(self.source_channel)
-                self.logger.debug('task manager %s', tm)
-                if tm['taskmanager_id']:
+                tm = self.dataspace.get_channel_manager(self.source_channel)
+                self.logger.debug('Channel manager %s', tm)
+                if tm['channel_manager_id']:
                     # get last datablock
                     data_block = datablock.DataBlock(self.dataspace,
                                                      self.source_channel,
-                                                     taskmanager_id=tm['taskmanager_id'],
+                                                     channel_manager_id=tm['channel_manager_id'],
                                                      sequence_id=tm['sequence_id'])
                     self.logger.debug('data block %s', data_block)
                     if data_block and data_block.generation_id:

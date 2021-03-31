@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from decisionengine.framework.taskmanager.ProcessingState import State
-from decisionengine.framework.taskmanager.ProcessingState import ProcessingState
+from decisionengine.framework.managers.ProcessingState import State
+from decisionengine.framework.managers.ProcessingState import ProcessingState
 
 
 class Worker(multiprocessing.Process):

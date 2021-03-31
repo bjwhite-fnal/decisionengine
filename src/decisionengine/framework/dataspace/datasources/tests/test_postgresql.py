@@ -30,19 +30,19 @@ def datasource(postgresql, data):
 @pytest.fixture(scope="session")
 def data():
     return {
-        "taskmanager": [
+        "channel_manager": [
             {
-                "name": "taskmanager1",
-                "taskmanager_id": "1"
+                "name": "channel_manager1",
+                "channel_manager_id": "1"
             },
             {
-                "name": "taskmanager2",
-                "taskmanager_id": "2"
+                "name": "channel_manager2",
+                "channel_manager_id": "2"
             }
         ],
         "dataproduct": [
             {
-                "taskmanager_id": "1",
+                "channel_manager_id": "1",
                 "generation_id": "1",
                 "key": "test_key1",
                 "value": "test_value1"
@@ -51,16 +51,16 @@ def data():
     }
 
 @pytest.fixture(scope="session")
-def taskmanager():
+def channel_manager():
     return {
-        "name": "new_taskmanager",
-        "taskmanager_id": "123"
+        "name": "new_channel_manager",
+        "channel_manager_id": "123"
     }
 
 @pytest.fixture(scope="session")
 def dataproduct():
     return {
-        "taskmanager_id": "1",
+        "channel_manager_id": "1",
         "generation_id": "2",
         "key": "new_key",
         "value": "new_value"
@@ -69,13 +69,13 @@ def dataproduct():
 @pytest.fixture(scope="session")
 def header(data):
     return Header(
-        data["taskmanager"][0]["taskmanager_id"]
+        data["channel_manager"][0]["channel_manager_id"]
     )
 
 @pytest.fixture(scope="session")
 def metadata(data):
     return Metadata(
-        data["taskmanager"][0]["taskmanager_id"]
+        data["channel_manager"][0]["channel_manager_id"]
     )
 
 def test_generate_insert_query():
@@ -90,49 +90,49 @@ def test_generate_insert_query():
 def test_create_tables(datasource):
     assert datasource.create_tables()
 
-def test_store_taskmanager(datasource, taskmanager):
-    result = datasource.store_taskmanager(taskmanager["name"], taskmanager["taskmanager_id"])
+def test_store_channel_manager(datasource, channel_manager):
+    result = datasource.store_channel_manager(channel_manager["name"], channel_manager["channel_manager_id"])
     assert result > 0
 
-def test_get_taskmanager(datasource, taskmanager, data):
-    # test valid taskmanager
-    result = datasource.get_taskmanager(data["taskmanager"][0]["name"], data["taskmanager"][0]["taskmanager_id"])
-    assert result["name"] == data["taskmanager"][0]["name"]
-    assert result["taskmanager_id"] == data["taskmanager"][0]["taskmanager_id"]
+def test_get_channel_manager(datasource, channel_manager, data):
+    # test valid channel_manager
+    result = datasource.get_channel_manager(data["channel_manager"][0]["name"], data["channel_manager"][0]["channel_manager_id"])
+    assert result["name"] == data["channel_manager"][0]["name"]
+    assert result["channel_manager_id"] == data["channel_manager"][0]["channel_manager_id"]
 
-    result = datasource.get_taskmanager(data["taskmanager"][0]["name"])
-    assert result["name"] == data["taskmanager"][0]["name"]
+    result = datasource.get_channel_manager(data["channel_manager"][0]["name"])
+    assert result["name"] == data["channel_manager"][0]["name"]
 
-    # test taskmanager not present in the database
+    # test channel_manager not present in the database
     try:
-        datasource.get_taskmanager(taskmanager["name"], taskmanager["taskmanager_id"])
+        datasource.get_channel_manager(channel_manager["name"], channel_manager["channel_manager_id"])
     except Exception as e:
         assert e.__class__ == KeyError
 
     try:
-        datasource.get_taskmanager(taskmanager["name"])
+        datasource.get_channel_manager(channel_manager["name"])
     except Exception as e:
         assert e.__class__ == KeyError
 
-def test_get_last_generation_id(datasource, taskmanager, data):
-    # test valid taskmanager
-    result = datasource.get_last_generation_id(data["taskmanager"][0]["name"], data["taskmanager"][0]["taskmanager_id"])
+def test_get_last_generation_id(datasource, channel_manager, data):
+    # test valid channel_manager
+    result = datasource.get_last_generation_id(data["channel_manager"][0]["name"], data["channel_manager"][0]["channel_manager_id"])
     assert result == int(data["dataproduct"][0]["generation_id"])
 
-    result = datasource.get_last_generation_id(data["taskmanager"][0]["name"])
+    result = datasource.get_last_generation_id(data["channel_manager"][0]["name"])
     assert result == int(data["dataproduct"][0]["generation_id"])
 
-    # test taskmanager not present in the database
+    # test channel_manager not present in the database
     try:
-        result = datasource.get_last_generation_id(taskmanager["name"], taskmanager["taskmanager_id"])
+        result = datasource.get_last_generation_id(channel_manager["name"], channel_manager["channel_manager_id"])
     except Exception as e:
         assert e.__class__ == KeyError
 
     try:
-        datasource.get_last_generation_id(taskmanager["name"])
+        datasource.get_last_generation_id(channel_manager["name"])
     except Exception as e:
         assert e.__class__ == KeyError
 
 def test_insert(datasource, dataproduct, header, metadata):
-    datasource.insert(dataproduct["taskmanager_id"], dataproduct["generation_id"], dataproduct["key"],
+    datasource.insert(dataproduct["channel_manager_id"], dataproduct["generation_id"], dataproduct["key"],
                       dataproduct["value"].encode(), header, metadata)

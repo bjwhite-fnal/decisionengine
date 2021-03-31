@@ -21,11 +21,12 @@ import socketserver
 import xmlrpc.server
 
 from decisionengine.framework.config import ChannelConfigHandler, ValidConfig, policies
-from decisionengine.framework.engine.Workers import Worker, Workers
+from decisionengine.framework.engine.Workers import SourceWorker, ChannelWorker, Workers
 import decisionengine.framework.dataspace.datablock as datablock
 import decisionengine.framework.dataspace.dataspace as dataspace
-import decisionengine.framework.taskmanager.ProcessingState as ProcessingState
-import decisionengine.framework.taskmanager.TaskManager as TaskManager
+import decisionengine.framework.managers.ProcessingState as ProcessingState
+import decisionengine.framework.managers.ChannelManager as ChannelManager
+import decisionengine.framework.managers.SourceManager as SourceManager
 
 
 class StopState(enum.Enum):
@@ -54,7 +55,8 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
         self.logger = logging.getLogger("decision_engine")
         signal.signal(signal.SIGHUP, self.handle_sighup)
-        self.workers = Workers()
+        self.source_workers = Workers()
+        self.channel_workers = Workers()
         self.channel_config_loader = channel_config_loader
         self.global_config = global_config
         self.dataspace = dataspace.DataSpace(self.global_config)
@@ -73,7 +75,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         return func(*params)
 
     def block_until(self, state):
-        with self.workers.unguarded_access() as workers:
+        with self.channel_workers.unguarded_access() as workers:
             if not workers:
                 self.logger.info('No active channels.')
             for tm in workers.values():
@@ -81,7 +83,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                     tm.wait_until(state)
 
     def block_while(self, state):
-        with self.workers.unguarded_access() as workers:
+        with self.channel_workers.unguarded_access() as workers:
             if not workers:
                 self.logger.info('No active channels.')
             for tm in workers.values():
@@ -141,7 +143,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
         found = False
         txt = "Product {}: ".format(product)
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             for ch, worker in workers.items():
                 if not worker.is_alive():
                     txt += f"Channel {ch} is in not active\n"
@@ -154,11 +156,11 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                     continue
                 found = True
                 txt += " Found in channel {}\n".format(ch)
-                tm = self.dataspace.get_taskmanager(ch)
+                tm = self.dataspace.get_channel_manager(ch)
                 try:
                     data_block = datablock.DataBlock(self.dataspace,
                                                      ch,
-                                                     taskmanager_id=tm['taskmanager_id'],
+                                                     channel_manager_id=tm['channel_manager_id'],
                                                      sequence_id=tm['sequence_id'])
                     data_block.generation_id -= 1
                     df = data_block[product]
@@ -198,7 +200,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         return txt[:-1]
 
     def rpc_print_products(self):
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             channel_keys = workers.keys()
             if not channel_keys:
                 return "No channels are currently active.\n"
@@ -211,13 +213,13 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                     continue
 
                 txt += "channel: {:<{width}}, id = {:<{width}}, state = {:<10} \n".format(ch,
-                                                                                          worker.task_manager_id,
+                                                                                          worker.channel_manager_id,
                                                                                           worker.get_state_name(),
                                                                                           width=width)
-                tm = self.dataspace.get_taskmanager(ch)
+                tm = self.dataspace.get_channel_manager(ch)
                 data_block = datablock.DataBlock(self.dataspace,
                                                  ch,
-                                                 taskmanager_id=tm['taskmanager_id'],
+                                                 channel_manager_id=tm['channel_manager_id'],
                                                  sequence_id=tm['sequence_id'])
                 data_block.generation_id -= 1
                 channel_config = self.channel_config_loader.get_channels()[ch]
@@ -242,7 +244,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         return txt[:-1]
 
     def rpc_status(self):
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             channel_keys = workers.keys()
             if not channel_keys:
                 return "No channels are currently active.\n" + self.reaper_status()
@@ -251,7 +253,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             width = max([len(x) for x in channel_keys]) + 1
             for ch, worker in workers.items():
                 txt += "channel: {:<{width}}, id = {:<{width}}, state = {:<10} \n".format(ch,
-                                                                                          worker.task_manager_id,
+                                                                                          worker.channel_manager_id,
                                                                                           worker.get_state_name(),
                                                                                           width=width)
                 channel_config = self.channel_config_loader.get_channels()[ch]
@@ -287,12 +289,12 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def start_channel(self, channel_name, channel_config):
         generation_id = 1
-        task_manager = TaskManager.TaskManager(channel_name,
+        channel_manager = ChannelManager.ChannelManager(channel_name,
                                                generation_id,
                                                channel_config,
                                                self.global_config)
-        worker = Worker(task_manager, self.global_config['logger'])
-        with self.workers.access() as workers:
+        worker = ChannelWorker(channel_manager, self.global_config['logger'])
+        with self.channel_workers.access() as workers:
             workers[channel_name] = worker
         self.logger.debug(f"Trying to start {channel_name}")
         worker.start()
@@ -313,7 +315,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 self.logger.error(f"Channel {name} failed to start : {e}")
 
     def rpc_start_channel(self, channel_name):
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             if channel_name in workers:
                 return f"ERROR, channel {channel_name} is running"
 
@@ -351,7 +353,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def rm_channel(self, channel, maybe_timeout):
         rc = None
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             if channel not in workers:
                 return StopState.NotFound
             self.logger.debug(f"Trying to stop {channel}")
@@ -361,7 +363,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def stop_worker(self, worker, timeout):
         if worker.is_alive():
-            worker.task_manager.take_offline(None)
+            worker.channel_manager.take_offline(None)
             worker.join(timeout)
         if worker.exitcode is None:
             worker.terminate()
@@ -371,7 +373,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def stop_channels(self):
         timeout = self.global_config.get("shutdown_timeout", 10)
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             for worker in workers.values():
                 self.stop_worker(worker, timeout)
             workers.clear()
@@ -391,18 +393,18 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         return logging.getLevelName(engineloglevel)
 
     def rpc_get_channel_log_level(self, channel):
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             if channel not in workers:
                 return f"No channel found with the name {channel}."
 
             worker = workers[channel]
             if not worker.is_alive():
                 return f"Channel {channel} is in ERROR state."
-            return logging.getLevelName(worker.task_manager.get_loglevel())
+            return logging.getLevelName(worker.channel_manager.get_loglevel())
 
     def rpc_set_channel_log_level(self, channel, log_level):
         """Assumes log_level is a string corresponding to the supported logging-module levels."""
-        with self.workers.access() as workers:
+        with self.channel_workers.access() as workers:
             if channel not in workers:
                 return f"No channel found with the name {channel}."
 
@@ -411,9 +413,9 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 return f"Channel {channel} is in ERROR state."
 
             log_level_code = getattr(logging, log_level)
-            if worker.task_manager.get_loglevel() == log_level_code:
+            if worker.channel_manager.get_loglevel() == log_level_code:
                 return f"Nothing to do. Current log level is : {log_level}"
-            worker.task_manager.set_loglevel_value(log_level)
+            worker.channel_manager.set_loglevel_value(log_level)
         return f"Log level changed to : {log_level}"
 
     def rpc_reaper_start(self, delay=0):

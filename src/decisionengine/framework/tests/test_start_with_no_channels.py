@@ -10,7 +10,7 @@ import pytest
 
 from decisionengine.framework.engine.DecisionEngine import _get_de_conf_manager, _create_de_server, parse_program_options
 from decisionengine.framework.dataspace.datasources.tests.fixtures import mock_data_block  # noqa: F401
-from decisionengine.framework.taskmanager.TaskManager import State
+from decisionengine.framework.managers.ChannelManager import State
 from decisionengine.framework.tests.fixtures import TEST_CONFIG_PATH, TEST_CHANNEL_CONFIG_PATH
 from decisionengine.framework.util.sockets import get_random_port
 

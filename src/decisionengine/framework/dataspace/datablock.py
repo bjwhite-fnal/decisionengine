@@ -81,18 +81,18 @@ class Metadata(UserDict):
 
     # Minimum information required for the Metadata dict to be valid
     required_keys = {
-        'taskmanager_id', 'state', 'generation_id',
+        'channel_manager_id', 'state', 'generation_id',
         'generation_time', 'missed_update_count'}
 
     # Valid states
     valid_states = {'NEW', 'START_BACKUP', 'METADATA_UPDATE', 'END_CYCLE'}
 
-    def __init__(self, taskmanager_id, state='NEW', generation_id=None,
+    def __init__(self, channel_manager_id, state='NEW', generation_id=None,
                  generation_time=None, missed_update_count=0):
         """
         Initialize Metadata object
 
-        :type taskmanager_id: :obj:`string`
+        :type channel_manager_id: :obj:`string`
         :type state: :obj:`string`
         :type generation_id: :obj:`int`
         :type generation_time: :obj:`float`
@@ -106,7 +106,7 @@ class Metadata(UserDict):
             generation_time = time.time()
 
         self.data = {
-            'taskmanager_id': taskmanager_id,
+            'channel_manager_id': channel_manager_id,
             'state': state,
             'generation_id': generation_id,
             'generation_time': int(generation_time),
@@ -130,19 +130,19 @@ class Header(UserDict):
 
     # Minimum information required for the Header dict to be valid
     required_keys = {
-        'taskmanager_id', 'create_time', 'expiration_time',
+        'channel_manager_id', 'create_time', 'expiration_time',
         'scheduled_create_time', 'creator', 'schema_id'
     }
 
     # Default lifetime of the data if the expiration time is not specified
     default_data_lifetime = 1800
 
-    def __init__(self, taskmanager_id, create_time=None, expiration_time=None,
+    def __init__(self, channel_manager_id, create_time=None, expiration_time=None,
                  scheduled_create_time=None, creator='module', schema_id=None):
         """
         Initialize Header object
 
-        :type taskmanager_id: :obj:`string`
+        :type channel_manager_id: :obj:`string`
         :type create_time: :obj:`float`
         :type expiration_time: :obj:`float`
         :type scheduled_create_time: :obj:`float`
@@ -159,7 +159,7 @@ class Header(UserDict):
             scheduled_create_time = time.time()
 
         self.data = {
-            'taskmanager_id': taskmanager_id,
+            'channel_manager_id': channel_manager_id,
             'create_time': int(create_time),
             'expiration_time': int(expiration_time),
             'scheduled_create_time': int(scheduled_create_time),
@@ -179,13 +179,13 @@ class Header(UserDict):
 
 class DataBlock(object):
 
-    def __init__(self, dataspace, name, taskmanager_id=None, generation_id=None, sequence_id=None):
+    def __init__(self, dataspace, name, channel_manager_id=None, generation_id=None, sequence_id=None):
         """
         Initialize DataBlock object
 
         :type dataspace: :obj:`DataSpace`
         :type name: :obj:`string`
-        :type taskmanager_id: :obj:`string`
+        :type channel_manager_id: :obj:`string`
         :type generation_id: :obj:`int`
         """
 
@@ -193,26 +193,26 @@ class DataBlock(object):
         self.logger.debug('Initializing a datablock')
         self.dataspace = dataspace
 
-        # If taskmanager_id is None create new or
-        if taskmanager_id:
-            self.taskmanager_id = taskmanager_id
+        # If channel_manager_id is None create new or
+        if channel_manager_id:
+            self.channel_manager_id = channel_manager_id
         else:
-            self.taskmanager_id = ('%s' % uuid.uuid1()).upper()
+            self.channel_manager_id = ('%s' % uuid.uuid1()).upper()
         if sequence_id:
             self.sequence_id = sequence_id
         else:
-            self.sequence_id = self.store_taskmanager(name, taskmanager_id)
+            self.sequence_id = self.store_channel_manager(name, channel_manager_id)
         if generation_id:
             self.generation_id = generation_id
         else:
             self.generation_id = self.dataspace.get_last_generation_id(
-                name, taskmanager_id)
+                name, channel_manager_id)
         self._keys = []
         self.lock = threading.Lock()
 
     def __str__(self):
         value = {
-            'taskamanger_id': self.taskmanager_id,
+            'channel_manager_id': self.channel_manager_id,
             'generation_id': self.generation_id,
             'sequence_id': self.sequence_id,
             'keys': self._keys,
@@ -229,22 +229,22 @@ class DataBlock(object):
     def keys(self):
         return self._keys
 
-    def store_taskmanager(self, taskmanager_name, taskmanager_id):
+    def store_channel_manager(self, channel_manager_name, channel_manager_id):
         """
-        Persist TaskManager, returns sequence number
-        :type taskmanager_name: :obj:`string`
-        :type taskmanager_id: :obj: `string`
+        Persist ChannelManager, returns sequence number
+        :type channel_manager_name: :obj:`string`
+        :type channel_manager_id: :obj: `string`
         :rtype: :obj:`int`
         """
-        return self.dataspace.store_taskmanager(taskmanager_name, taskmanager_id)
+        return self.dataspace.store_channel_manager(channel_manager_name, channel_manager_id)
 
-    def get_taskmanager(self, taskmanager_name, taskmanager_id=None):
+    def get_channel_manager(self, channel_manager_name, channel_manager_id=None):
         """
-        Retrieve TaskManager
-        :type taskmanager_name: :obj:`string`
-        :arg taskmanager_name: name of taskmanager to retrieve
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: id of taskmanager to retrieve
+        Retrieve ChannelManager
+        :type channel_manager_name: :obj:`string`
+        :arg channel_manager_name: name of channel_manager to retrieve
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: id of channel_manager to retrieve
         :rtype: :obj: `dict`
 
         The dictionary returned looks like :
@@ -252,9 +252,9 @@ class DataBlock(object):
                       tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-360, name=None)),
          'sequence_id': 135L,
          'name': 'AWS_Calculations',
-         'taskmanager_id': '77B16EB5-C79E-45B0-B1B1-37E846692E1D'}
+         'channel_manager_id': '77B16EB5-C79E-45B0-B1B1-37E846692E1D'}
         """
-        return self.dataspace.get_taskmanager(taskmanager_name, taskmanager_id)
+        return self.dataspace.get_channel_manager(channel_manager_name, channel_manager_id)
 
     def put(self, key, value, header, metadata=None):
         """
@@ -343,7 +343,7 @@ class DataBlock(object):
                     v = value.get("value")
                 result.append({"key": value["key"],
                                "generation_id": value["generation_id"],
-                               "taskmanager_id": value["taskmanager_id"],
+                               "channel_manager_id": value["channel_manager_id"],
                                "value": v})
         except Exception:
             self.logger.exception("Unexpected error in get_dataproducts")

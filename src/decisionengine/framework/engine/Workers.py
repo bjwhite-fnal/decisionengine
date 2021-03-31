@@ -3,7 +3,7 @@ import multiprocessing
 import os
 import threading
 
-import decisionengine.framework.taskmanager.ProcessingState as ProcessingState
+import decisionengine.framework.managers.ProcessingState as ProcessingState
 
 FORMATTER = logging.Formatter(
     "%(asctime)s - %(name)s - %(module)s - %(process)d - %(threadName)s - %(levelname)s - %(message)s",
@@ -11,8 +11,23 @@ FORMATTER = logging.Formatter(
 
 
 class Worker(multiprocessing.Process):
+    def __init__(self, logger_config):
+        super().__init__()
+        self.logger_config = logger_config
+
+
+class SourceWorker(Worker):
+    def __init__(self, logger_config):
+        super().__init__(logger_config)
+
+    def run(self):
+        # TODO: Make this start up the source so that it works similarly to the way we start a channel
+        raise NotImplementedError
+
+
+class ChannelWorker(Worker):
     '''
-    Class that encapsulates a channel's task manager as a separate process.
+    Class that encapsulates a channel's channel manager as a separate process.
 
     This class' run function is called whenever the process is
     started.  If the process is abruptly terminated--e.g. the run
@@ -25,20 +40,19 @@ class Worker(multiprocessing.Process):
     base class.
     '''
 
-    def __init__(self, task_manager, logger_config):
-        super().__init__()
-        self.task_manager = task_manager
-        self.task_manager_id = task_manager.id
-        self.logger_config = logger_config
+    def __init__(self, channel_manager, logger_config):
+        super().__init__(logger_config)
+        self.channel_manager = channel_manager
+        self.channel_manager_id = channel_manager.id
 
     def wait_until(self, state):
-        return self.task_manager.state.wait_until(state)
+        return self.channel_manager.state.wait_until(state)
 
     def wait_while(self, state):
-        return self.task_manager.state.wait_while(state)
+        return self.channel_manager.state.wait_while(state)
 
     def get_state_name(self):
-        return self.task_manager.get_state_name()
+        return self.channel_manager.get_state_name()
 
     def run(self):
         logger = logging.getLogger()
@@ -49,7 +63,7 @@ class Worker(multiprocessing.Process):
             file_handler = logging.handlers.RotatingFileHandler(os.path.join(
                                                                 os.path.dirname(
                                                                     self.logger_config["log_file"]),
-                                                                self.task_manager.name + ".log"),
+                                                                self.channel_manager.name + ".log"),
                                                                 maxBytes=self.logger_config.get("max_file_size",
                                                                 200 * 1000000),
                                                                 backupCount=self.logger_config.get("max_backup_count",
@@ -58,7 +72,7 @@ class Worker(multiprocessing.Process):
             file_handler = logging.handlers.TimedRotatingFileHandler(os.path.join(
                                                                      os.path.dirname(
                                                                          self.logger_config["log_file"]),
-                                                                     self.task_manager.name + ".log"),
+                                                                     self.channel_manager.name + ".log"),
                                                                      when=self.logger_config.get("rotation_time_unit", 'D'),
                                                                      interval=self.logger_config.get("rotation_time_interval", '1'))
 
@@ -66,13 +80,13 @@ class Worker(multiprocessing.Process):
         logger.addHandler(file_handler)
 
         channel_log_level = self.logger_config.get("global_channel_log_level", "WARNING")
-        self.task_manager.set_loglevel_value(channel_log_level)
-        self.task_manager.run()
+        self.channel_manager.set_loglevel_value(channel_log_level)
+        self.channel_manager.run()
 
 
 class Workers:
     '''
-    This class manages and provides access to the task-manager workers.
+    This class manages and provides access to the Workers which own this ChannelManager.
 
     The intention is that the decision engine never directly interacts with the
     workers but refers to them via a context manager:
@@ -102,9 +116,9 @@ class Workers:
             for channel, process in self._workers.items():
                 if process.is_alive():
                     continue
-                if process.task_manager.state.inactive():
+                if process.channel_manager.state.inactive():
                     continue
-                process.task_manager.state.set(ProcessingState.State.ERROR)
+                process.channel_manager.state.set(ProcessingState.State.ERROR)
 
     class Access:
         def __init__(self, workers, lock):

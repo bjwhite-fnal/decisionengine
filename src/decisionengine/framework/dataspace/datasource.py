@@ -4,8 +4,8 @@ import logging
 
 class DataSource(object, metaclass=abc.ABCMeta):
 
-    #: Name of the taskmanager table
-    taskmanager_table = 'taskmanager'
+    #: Name of the channel_manager table
+    channel_manager_table = 'channel_manager'
 
     #: Name of the dataproduct table
     dataproduct_table = 'dataproduct'
@@ -43,14 +43,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         self.logger.info('getting the datasource schema')
 
         schemas = {
-            'taskmanager': [
+            'channel_manager': [
                 'sequence_id INT',
-                'taskmanager_id TEXT',
+                'channel_manager_id TEXT',
                 'name TEXT',
                 'datestamp timestamp with timezone',
             ],
             'header': [
-                'taskmanager_id INT',
+                'channel_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'create_time REAL',
@@ -64,7 +64,7 @@ class DataSource(object, metaclass=abc.ABCMeta):
                 'schema BLOB',   # keys in the value dict of the dataproduct table
             ],
             'metadata': [
-                'taskmanager_id INT',
+                'channel_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'state TEXT',
@@ -72,7 +72,7 @@ class DataSource(object, metaclass=abc.ABCMeta):
                 'missed_update_count INT',
             ],
             'dataproduct': [
-                'taskmanager_id INT',
+                'channel_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'value BLOB'
@@ -100,14 +100,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def insert(self, taskmanager_id, generation_id, key,
+    def insert(self, channel_manager_id, generation_id, key,
                value, header, metadata):
         """
         Insert data into respective tables for the given
-        taskmanager_id, generation_id, key
+        channel_manager_id, generation_id, key
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -123,14 +123,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def update(self, taskmanager_id, generation_id, key,
+    def update(self, channel_manager_id, generation_id, key,
                value, header, metadata):
         """
         Update the data in respective tables for the given
-        taskmanager_id, generation_id, key
+        channel_manager_id, generation_id, key
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -146,107 +146,107 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_dataproduct(self, taskmanager_id, generation_id, key):
+    def get_dataproduct(self, channel_manager_id, generation_id, key):
         """
         Return the data from the dataproduct table for the given
-        taskmanager_id, generation_id, key
+        channel_manager_id, generation_id, key
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
         :arg key: key for the value
         """
-        self.logger.info('datasource is getting a dataproduct for a taskmanger')
+        self.logger.info('datasource is getting a dataproduct for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_dataproducts(self, taskmanager_id):
+    def get_dataproducts(self, channel_manager_id):
         """
         Return list of all data products associated with
-        with taskmanager_id
+        with channel_manager_id
 
-        :type taskmanager_id: :obj:`string`
+        :type channel_manager_id: :obj:`string`
         """
-        self.logger.info('datasource is getting all dataproducts for a taskmanger')
+        self.logger.info('datasource is getting all dataproducts for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_header(self, taskmanager_id, generation_id, key):
+    def get_header(self, channel_manager_id, generation_id, key):
         """
         Return the header from the header table for the given
-        taskmanager_id, generation_id, key
+        channel_manager_id, generation_id, key
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
         :arg key: key for the value
         """
-        self.logger.info('datasource is getting the header for a taskmanger')
+        self.logger.info('datasource is getting the header for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_metadata(self, taskmanager_id, generation_id, key):
+    def get_metadata(self, channel_manager_id, generation_id, key):
         """
         Return the metadata from the metadata table for the given
-        taskmanager_id, generation_id, key
+        channel_manager_id, generation_id, key
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
         :arg key: key for the value
         """
-        self.logger.info('datasource is getting the metadata for a taskmanger')
+        self.logger.info('datasource is getting the metadata for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_datablock(self, taskmanager_id, generation_id):
+    def get_datablock(self, channel_manager_id, generation_id):
         """
         Return the entire datablock from the dataproduct table for the given
-        taskmanager_id, generation_id
+        channel_manager_id, generation_id
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         """
-        self.logger.info('datasource is getting the datablock for a taskmanger')
+        self.logger.info('datasource is getting the datablock for a channel_manager')
         return
 
     @abc.abstractmethod
-    def duplicate_datablock(self, taskmanager_id, generation_id,
+    def duplicate_datablock(self, channel_manager_id, generation_id,
                             new_generation_id):
         """
-        For the given taskmanager_id, make a copy of the datablock with given
+        For the given channel_manager_id, make a copy of the datablock with given
         generation_id, set the generation_id for the datablock copy
 
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: taskmanager_id for generation to be retrieved
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type new_generation_id: :obj:`int`
         :arg new_generation_id: generation_id of the new datablock created
         """
-        self.logger.info('datasource is duplicating a datablock for a taskmanger')
+        self.logger.info('datasource is duplicating a datablock for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_last_generation_id(self, name, taskmanager_id=None):
+    def get_last_generation_id(self, name, channel_manager_id=None):
         """
-        Return last generation id for current task manager
-        or taskmanager w/ task_manager_id.
+        Return last generation id for current channel manager
+        or channel_manager w/ channel_manager_id.
 
         :type name: :obj:`string`
-        :arg name: task manager name
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: task manager id
+        :arg name: channel manager name
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: channel manager id
         """
-        self.logger.info('datasource is getting the last generation id for a taskmanager')
+        self.logger.info('datasource is getting the last generation id for a channel_manager')
         return
 
     @abc.abstractmethod
@@ -258,39 +258,39 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def store_taskmanager(self, taskmanager_name, taskmanager_id):
+    def store_channel_manager(self, channel_manager_name, channel_manager_id):
         """
-        Store TaskManager
-        :type taskmanager_name: :obj:`string`
-        :arg taskmanager_name: name of taskmanager to retrieve
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: id of taskmanager to retrieve
+        Store ChannelManager
+        :type channel_manager_name: :obj:`string`
+        :arg channel_manager_name: name of channel_manager to retrieve
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: id of channel_manager to retrieve
         """
-        self.logger.info('datasource is storing a taskmanager')
+        self.logger.info('datasource is storing a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_taskmanagers(self, taskmanager_name=None, start_time=None, end_time=None):
+    def get_channel_managers(self, channel_manager_name=None, start_time=None, end_time=None):
         """
-        Retrieve TaskManagers
-        :type taskmanager_name: :obj:`string`
-        :arg taskmanager_name: name of taskmanager to retrieve
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: id of taskmanager to retrieve
+        Retrieve ChannelManagers
+        :type channel_manager_name: :obj:`string`
+        :arg channel_manager_name: name of channel_manager to retrieve
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: id of channel_manager to retrieve
         """
-        self.logger.info('datasource is getting all taskmanagers')
+        self.logger.info('datasource is getting all channel_managers')
         return
 
     @abc.abstractmethod
-    def get_taskmanager(self, taskmanager_name, taskmanager_id):
+    def get_channel_manager(self, channel_manager_name, channel_manager_id):
         """
-        Retrieve TaskManager
-        :type taskmanager_name: :obj:`string`
-        :arg taskmanager_name: name of taskmanager to retrieve
-        :type taskmanager_id: :obj:`string`
-        :arg taskmanager_id: id of taskmanager to retrieve
+        Retrieve ChannelManager
+        :type channel_manager_name: :obj:`string`
+        :arg channel_manager_name: name of channel_manager to retrieve
+        :type channel_manager_id: :obj:`string`
+        :arg channel_manager_id: id of channel_manager to retrieve
         """
-        self.logger.info('datasource is getting a taskmanager')
+        self.logger.info('datasource is getting a channel_manager')
         return
 
     @abc.abstractmethod

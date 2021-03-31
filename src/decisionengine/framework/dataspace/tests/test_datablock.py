@@ -28,15 +28,15 @@ def datasource(request, postgresql, data):
 @pytest.fixture()
 def data():
     return {
-        "taskmanager": [
+        "channel_manager": [
             {
-                "taskmanager_id": "1",
-                "name": "taskmanager1"
+                "channel_manager_id": "1",
+                "name": "channel_manager1"
             }
         ],
         "dataproduct": [
             {
-                "taskmanager_id": "1",
+                "channel_manager_id": "1",
                 "generation_id": "1",
                 "key": "test_key1",
                 "value": "test_value1"
@@ -70,7 +70,7 @@ def dspace(datasource):
 
 @pytest.fixture()
 def dblock(dspace, data):
-    return datablock.DataBlock(dspace, data["taskmanager"][0]["name"], data["taskmanager"][0]["taskmanager_id"])
+    return datablock.DataBlock(dspace, data["channel_manager"][0]["name"], data["channel_manager"][0]["channel_manager_id"])
 
 # Wrapper to embed pytest fixtures in a TestCase class
 @pytest.fixture()
@@ -127,35 +127,35 @@ class TestDatablock(unittest.TestCase):
         self.assertEqual(value, self.obj)
 
     def test_DataBlock_constructor(self):
-        dblock = datablock.DataBlock(self.dataspace, self.data["taskmanager"][0]["name"],
-                                     self.data["taskmanager"][0]["taskmanager_id"])
+        dblock = datablock.DataBlock(self.dataspace, self.data["channel_manager"][0]["name"],
+                                     self.data["channel_manager"][0]["channel_manager_id"])
         self.assertEqual(str(dblock.generation_id), self.data["dataproduct"][0]["generation_id"])
 
-        dblock = datablock.DataBlock(self.dataspace, self.data["taskmanager"][0]["name"],
+        dblock = datablock.DataBlock(self.dataspace, self.data["channel_manager"][0]["name"],
                                      generation_id=self.data["dataproduct"][0]["generation_id"])
         self.assertEqual(str(dblock.generation_id), self.data["dataproduct"][0]["generation_id"])
 
-        dblock = datablock.DataBlock(self.dataspace, self.data["taskmanager"][0]["name"],
-                                     taskmanager_id=self.data["taskmanager"][0]["taskmanager_id"],
+        dblock = datablock.DataBlock(self.dataspace, self.data["channel_manager"][0]["name"],
+                                     channel_manager_id=self.data["channel_manager"][0]["channel_manager_id"],
                                      sequence_id=1)
         self.assertEqual(str(dblock.generation_id), self.data["dataproduct"][0]["generation_id"])
 
     def test_DataBlock_to_str(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
 
         result = str(self.datablock)
         self.assertEqual(
             result,
-            "{'taskamanger_id': '1', 'generation_id': 1, 'sequence_id': 2, "
+            "{'channel_manager_id': '1', 'generation_id': 1, 'sequence_id': 2, "
             "'keys': ['%s'], 'dataproducts': {'%s': '%s'}}"
             % (dataproduct["key"], dataproduct["key"], dataproduct["value"])
         )
 
     def test_DataBlock_key_management(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
 
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
 
@@ -175,53 +175,53 @@ class TestDatablock(unittest.TestCase):
 
     def test_DataBlock_get_header(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
 
         self.assertEqual(header, self.datablock.get_header(dataproduct["key"]))
 
     def test_DataBlock_get_metadata(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
-        metadata = datablock.Metadata(dataproduct["taskmanager_id"], generation_id=int(dataproduct["generation_id"]))
+        header = datablock.Header(dataproduct["channel_manager_id"])
+        metadata = datablock.Metadata(dataproduct["channel_manager_id"], generation_id=int(dataproduct["generation_id"]))
         self.datablock.put(dataproduct["key"], dataproduct["value"], header, metadata)
 
         self.assertEqual(metadata, self.datablock.get_metadata(dataproduct["key"]))
 
-    def test_DataBlock_get_taskmanager(self):
-        taskmanager = self.data["taskmanager"][0]
+    def test_DataBlock_get_channel_manager(self):
+        channel_manager = self.data["channel_manager"][0]
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
 
-        tid = self.datablock.get_taskmanager(taskmanager["name"])["taskmanager_id"]
-        self.assertEqual(taskmanager["taskmanager_id"], tid)
+        tid = self.datablock.get_channel_manager(channel_manager["name"])["channel_manager_id"]
+        self.assertEqual(channel_manager["channel_manager_id"], tid)
 
-    def test_DataBlock_get_taskmanagers(self):
-        taskmanager = self.data["taskmanager"][0]
+    def test_DataBlock_get_channel_managers(self):
+        channel_manager = self.data["channel_manager"][0]
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
-        tms = self.dataspace.get_taskmanagers()
-        self.assertEqual(taskmanager["taskmanager_id"], tms[0]["taskmanager_id"])
+        tms = self.dataspace.get_channel_managers()
+        self.assertEqual(channel_manager["channel_manager_id"], tms[0]["channel_manager_id"])
 
 
     def test_DataBlock_get_dataproducts(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
         self.datablock.put(dataproduct["key"], dataproduct["value"], header)
         products = self.datablock.get_dataproducts()
         self.assertEqual(dataproduct["value"], products[0]["value"])
 
     def test_DataBlock_duplicate(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
-        metadata = datablock.Metadata(dataproduct["taskmanager_id"], generation_id=int(dataproduct["generation_id"]))
+        header = datablock.Header(dataproduct["channel_manager_id"])
+        metadata = datablock.Metadata(dataproduct["channel_manager_id"], generation_id=int(dataproduct["generation_id"]))
         self.datablock.put(dataproduct["key"], dataproduct["value"], header, metadata)
 
         dblock = self.datablock.duplicate()
 
-        self.assertEqual(dblock.taskmanager_id, self.datablock.taskmanager_id)
+        self.assertEqual(dblock.channel_manager_id, self.datablock.channel_manager_id)
         self.assertEqual(dblock.generation_id + 1, self.datablock.generation_id)
         self.assertEqual(dblock.sequence_id, self.datablock.sequence_id)
         self.assertEqual(dblock._keys, self.datablock._keys)
@@ -231,29 +231,29 @@ class TestDatablock(unittest.TestCase):
     def test_Metadata_constructor(self):
         dataproduct = self.data["dataproduct"][0]
 
-        metadata = datablock.Metadata(dataproduct["taskmanager_id"])
-        self.assertEqual(metadata.data["taskmanager_id"], dataproduct["taskmanager_id"])
+        metadata = datablock.Metadata(dataproduct["channel_manager_id"])
+        self.assertEqual(metadata.data["channel_manager_id"], dataproduct["channel_manager_id"])
 
         genTime = 1.0
         missCount = 3
         state = "START_BACKUP"
-        metadata = datablock.Metadata(dataproduct["taskmanager_id"],
+        metadata = datablock.Metadata(dataproduct["channel_manager_id"],
                                       state=state,
                                       generation_id=int(dataproduct["generation_id"]),
                                       generation_time=genTime,
                                       missed_update_count=missCount)
-        self.assertEqual(metadata.data["taskmanager_id"], dataproduct["taskmanager_id"])
+        self.assertEqual(metadata.data["channel_manager_id"], dataproduct["channel_manager_id"])
         self.assertEqual(metadata.data["state"], state)
         self.assertEqual(metadata.data["generation_id"], int(dataproduct["generation_id"]))
         self.assertEqual(metadata.data["generation_time"], genTime)
         self.assertEqual(metadata.data["missed_update_count"], missCount)
 
         with self.assertRaises(datablock.InvalidMetadataError):
-            metadata = datablock.Metadata(dataproduct["taskmanager_id"], "INVALID_STATE")
+            metadata = datablock.Metadata(dataproduct["channel_manager_id"], "INVALID_STATE")
 
     def test_Metadata_set_state(self):
         dataproduct = self.data["dataproduct"][0]
-        metadata = datablock.Metadata(dataproduct["taskmanager_id"])
+        metadata = datablock.Metadata(dataproduct["channel_manager_id"])
 
         state = "START_BACKUP"
         metadata.set_state(state)
@@ -265,21 +265,21 @@ class TestDatablock(unittest.TestCase):
     def test_Header_constructor(self):
         dataproduct = self.data["dataproduct"][0]
 
-        header = datablock.Header(dataproduct["taskmanager_id"])
-        self.assertEqual(header.data["taskmanager_id"], dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
+        self.assertEqual(header.data["channel_manager_id"], dataproduct["channel_manager_id"])
 
         createTime = 1.0
         expirationTime = 3.0
         scheduleTime = 5.0
         creator = "creator"
         schema = 1
-        header = datablock.Header(dataproduct["taskmanager_id"],
+        header = datablock.Header(dataproduct["channel_manager_id"],
                                   create_time=createTime,
                                   expiration_time=expirationTime,
                                   scheduled_create_time=scheduleTime,
                                   creator=creator,
                                   schema_id=schema)
-        self.assertEqual(header.data["taskmanager_id"], dataproduct["taskmanager_id"])
+        self.assertEqual(header.data["channel_manager_id"], dataproduct["channel_manager_id"])
         self.assertEqual(header.data["create_time"], createTime)
         self.assertEqual(header.data["expiration_time"], expirationTime)
         self.assertEqual(header.data["scheduled_create_time"], scheduleTime)
@@ -288,7 +288,7 @@ class TestDatablock(unittest.TestCase):
 
     def test_Header_is_valid(self):
         dataproduct = self.data["dataproduct"][0]
-        header = datablock.Header(dataproduct["taskmanager_id"])
+        header = datablock.Header(dataproduct["channel_manager_id"])
 
         self.assertEqual(header.is_valid(), True)
 

@@ -39,7 +39,7 @@ def mock_data_block():
     class MockDataBlock(UserDict):
         def __init__(self, products={}):
             self.lock = threading.Lock()
-            self.taskmanager_id = None
+            self.channel_manager_id = None
             self.generation_id = 1
             self.data = products
 
