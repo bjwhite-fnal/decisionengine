@@ -287,6 +287,73 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         self.reaper_stop()
         return "OK"
 
+    def start_source(self, source_name, source_config):
+        generation_id = 0
+        source_manager = SourceManager.SourceManager(source_name,
+                                               generation_id,
+                                               source_config,
+                                               self.global_config)
+        worker = SourceWorker(source_manager, self.global_config['logger'])
+        with self.source_workers.access() as workers:
+            workers[source_name] = worker
+        self.logger.debug(f"Trying to start {source_name}")
+        worker.start()
+        worker.wait_while(ProcessingState.State['BOOT'])
+        self.logger.info(f"Source {source_name} started")
+
+    def start_sources(self):
+        self.channel_config_loader.load_all_channels()
+
+        if not self.channel_config_loader.get_channels():
+            self.logger.info("No channel configurations available in " +
+                             f"{self.channel_config_loader.channel_config_dir}")
+
+        all_source_configs = { name : config for (name,config) in self.channel_config_loader.get_channels().items() }
+
+        for name, config in all_source_configs.items():
+            try:
+                self.start_source(name, config)
+            except Exception as e:
+                self.logger.error(f"Source {name} failed to start : {e}")
+
+    def rpc_start_source(self, source_name):
+        # TODO: This isn't gonna be happy about the config we are using here
+        #   needs to be the source name/config or something like that instead
+        with self.source_workers.access() as workers:
+            if source_name in workers:
+                return f"ERROR, source {source_name} is running"
+
+        success, result = self.channel_config_loader.load_channel(source_name)
+        if not success:
+            return result
+        self.start_source(source_name, result)
+        return "OK"
+
+    def rpc_start_sources(self):
+        self.start_sources()
+        return "OK"
+
+    def stop_source(self, source):
+        raise NotImplementedError
+
+    def rpc_stop_source(self):
+        raise NotImplementedError
+
+    def stop_sources(self):
+        raise NotImplementedError
+
+    def rpc_stop_sources(self):
+        raise NotImplementedError
+
+    def rpc_kill_source(self, source, timeout=None):
+        raise NotImplementedError
+
+    def rm_source(self, source, maybe_timeout):
+        raise NotImplementedError
+
+    def rpc_rm_source(self, source, maybe_timeout):
+        raise NotImplementedError
+
     def start_channel(self, channel_name, channel_config):
         generation_id = 1
         channel_manager = ChannelManager.ChannelManager(channel_name,

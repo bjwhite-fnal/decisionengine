@@ -15,14 +15,70 @@ class Worker(multiprocessing.Process):
         super().__init__()
         self.logger_config = logger_config
 
+    def configure_logging(self):
+        logger = logging.getLogger()
+        logger.setLevel(logging.WARNING)
+        logger_rotate_by = self.logger_config.get("file_rotate_by", "size")
+
+        if isinstance(self, ChannelWorker):
+            if logger_rotate_by == "size":
+                file_handler = logging.handlers.RotatingFileHandler(os.path.join(
+                                                                    os.path.dirname(
+                                                                        self.logger_config["log_file"]),
+                                                                    self.channel_manager.name + ".log"),
+                                                                    maxBytes=self.logger_config.get("max_file_size",
+                                                                    200 * 1000000),
+                                                                    backupCount=self.logger_config.get("max_backup_count",
+                                                                    6))
+            else:
+                file_handler = logging.handlers.TimedRotatingFileHandler(os.path.join(
+                                                                         os.path.dirname(
+                                                                             self.logger_config["log_file"]),
+                                                                         self.channel_manager.name + ".log"),
+                                                                         when=self.logger_config.get("rotation_time_unit", 'D'),
+                                                                         interval=self.logger_config.get("rotation_time_interval", '1'))
+        elif isinstance(self, SourceWorker):
+            if logger_rotate_by == "size":
+                file_handler = logging.handlers.RotatingFileHandler(os.path.join(
+                                                                    os.path.dirname(
+                                                                        self.logger_config["log_file"]),
+                                                                    self.source_manager.name + ".log"),
+                                                                    maxBytes=self.logger_config.get("max_file_size",
+                                                                    200 * 1000000),
+                                                                    backupCount=self.logger_config.get("max_backup_count",
+                                                                    6))
+            else:
+                file_handler = logging.handlers.TimedRotatingFileHandler(os.path.join(
+                                                                         os.path.dirname(
+                                                                             self.logger_config["log_file"]),
+                                                                         self.source_manager.name + ".log"),
+                                                                         when=self.logger_config.get("rotation_time_unit", 'D'),
+                                                                         interval=self.logger_config.get("rotation_time_interval", '1'))
+        else:
+            raise TypeError
+
+        file_handler.setFormatter(FORMATTER)
+        logger.addHandler(file_handler)
+
+        log_level = self.logger_config.get("global_channel_log_level", "WARNING")
+        if isinstance(self, ChannelWorker):
+            self.channel_manager.set_loglevel_value(log_level)
+        elif isinstance(self, SourceWorker):
+            self.source_manager.set_loglevel_value(log_level)
+        else:
+            raise TypeError
+
 
 class SourceWorker(Worker):
-    def __init__(self, logger_config):
+    def __init__(self, source_manager, logger_config):
         super().__init__(logger_config)
+        self.source_manager = source_manager
+        self.source_manager_id = source_manager.id
 
     def run(self):
         # TODO: Make this start up the source so that it works similarly to the way we start a channel
-        raise NotImplementedError
+        self.configure_logging()
+        self.source_manager.run()
 
 
 class ChannelWorker(Worker):
@@ -55,32 +111,7 @@ class ChannelWorker(Worker):
         return self.channel_manager.get_state_name()
 
     def run(self):
-        logger = logging.getLogger()
-        logger.setLevel(logging.WARNING)
-        logger_rotate_by = self.logger_config.get("file_rotate_by", "size")
-
-        if logger_rotate_by == "size":
-            file_handler = logging.handlers.RotatingFileHandler(os.path.join(
-                                                                os.path.dirname(
-                                                                    self.logger_config["log_file"]),
-                                                                self.channel_manager.name + ".log"),
-                                                                maxBytes=self.logger_config.get("max_file_size",
-                                                                200 * 1000000),
-                                                                backupCount=self.logger_config.get("max_backup_count",
-                                                                6))
-        else:
-            file_handler = logging.handlers.TimedRotatingFileHandler(os.path.join(
-                                                                     os.path.dirname(
-                                                                         self.logger_config["log_file"]),
-                                                                     self.channel_manager.name + ".log"),
-                                                                     when=self.logger_config.get("rotation_time_unit", 'D'),
-                                                                     interval=self.logger_config.get("rotation_time_interval", '1'))
-
-        file_handler.setFormatter(FORMATTER)
-        logger.addHandler(file_handler)
-
-        channel_log_level = self.logger_config.get("global_channel_log_level", "WARNING")
-        self.channel_manager.set_loglevel_value(channel_log_level)
+        self.configure_logging()
         self.channel_manager.run()
 
 
