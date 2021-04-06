@@ -30,8 +30,7 @@ def _create_worker(module_name, class_name, parameters):
 
 class Worker:
     """
-    Provides interface to loadable modules an events to sycronise
-    execution
+    Provides interface to loadable modules and events for synchronization of execution
     """
 
     def __init__(self, conf_dict):
