@@ -213,7 +213,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                     continue
 
                 txt += "channel: {:<{width}}, id = {:<{width}}, state = {:<10} \n".format(ch,
-                                                                                          worker.channel_manager_id,
+                                                                                          worker.manager_id,
                                                                                           worker.get_state_name(),
                                                                                           width=width)
                 tm = self.dataspace.get_channel_manager(ch)
@@ -253,7 +253,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             width = max([len(x) for x in channel_keys]) + 1
             for ch, worker in workers.items():
                 txt += "channel: {:<{width}}, id = {:<{width}}, state = {:<10} \n".format(ch,
-                                                                                          worker.channel_manager_id,
+                                                                                          worker.manager_id,
                                                                                           worker.get_state_name(),
                                                                                           width=width)
                 channel_config = self.channel_config_loader.get_channels()[ch]
@@ -308,13 +308,14 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             self.logger.info("No channel configurations available in " +
                              f"{self.channel_config_loader.channel_config_dir}")
 
-        all_source_configs = { name : config for (name,config) in self.channel_config_loader.get_channels().items() }
+        all_source_configs = { name : config['sources'] for (name,config) in self.channel_config_loader.get_channels().items() }
 
-        for name, config in all_source_configs.items():
-            try:
-                self.start_source(name, config)
-            except Exception as e:
-                self.logger.error(f"Source {name} failed to start : {e}")
+        for channel, channel_source_configs in all_source_configs.items():
+            for source_name, source_config in channel_source_configs.items():
+                try:
+                    self.start_source(source_name, source_config)
+                except Exception as e:
+                    self.logger.error(f"Source {source_name} failed to start : {e}")
 
     def rpc_start_source(self, source_name):
         # TODO: This isn't gonna be happy about the config we are using here
@@ -323,10 +324,10 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             if source_name in workers:
                 return f"ERROR, source {source_name} is running"
 
-        success, result = self.channel_config_loader.load_channel(source_name)
-        if not success:
-            return result
-        self.start_source(source_name, result)
+            success, result = self.channel_config_loader.load_channel(source_name)
+            if not success:
+                return result
+            self.start_source(source_name, result)
         return "OK"
 
     def rpc_start_sources(self):
@@ -430,7 +431,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def stop_worker(self, worker, timeout):
         if worker.is_alive():
-            worker.channel_manager.take_offline(None)
+            worker.manager.take_offline(None)
             worker.join(timeout)
         if worker.exitcode is None:
             worker.terminate()
@@ -467,7 +468,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             worker = workers[channel]
             if not worker.is_alive():
                 return f"Channel {channel} is in ERROR state."
-            return logging.getLevelName(worker.channel_manager.get_loglevel())
+            return logging.getLevelName(worker.manager.get_loglevel())
 
     def rpc_set_channel_log_level(self, channel, log_level):
         """Assumes log_level is a string corresponding to the supported logging-module levels."""
@@ -480,9 +481,9 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 return f"Channel {channel} is in ERROR state."
 
             log_level_code = getattr(logging, log_level)
-            if worker.channel_manager.get_loglevel() == log_level_code:
+            if worker.manager.get_loglevel() == log_level_code:
                 return f"Nothing to do. Current log level is : {log_level}"
-            worker.channel_manager.set_loglevel_value(log_level)
+            worker.manager.set_loglevel_value(log_level)
         return f"Log level changed to : {log_level}"
 
     def rpc_reaper_start(self, delay=0):

@@ -48,7 +48,7 @@ class Worker:
         self.run_counter = 0
         self.data_updated = threading.Event()
         self.stop_running = threading.Event()
-        logging.getLogger("decision_engine").debug('Creating worker: module=%s name=%s parameters=%s schedule=%s',
+        logging.getLogger("decision_engine").debug('Creating channel execution worker: module=%s name=%s parameters=%s schedule=%s',
                                                    self.module, self.name, conf_dict['parameters'], self.schedule)
 
 
