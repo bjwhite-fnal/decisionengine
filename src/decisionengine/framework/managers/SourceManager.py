@@ -106,4 +106,49 @@ class SourceManager:
 
 
     def run(self):
-        raise NotImplementedError
+        logging.getLogger().setLevel(self.loglevel.value)
+        logging.getLogger().info(f'Starting Source Manager {self.id}')
+
+        # Do an initial run of the Source
+        # Then update the state to Steady
+
+        # Then run the work loop to continually update the sources every 'period'
+        while not self.state.should_stop():
+            try:
+                if self.state.get() == State.BOOT:
+                    self.state.set(State.STEADY)
+                # Run the source
+                # If its the first time, update state so that the BOOT wait proceeds
+            except Exception:  # pragma: no cover
+                logging.getLogger().exception("Exception in the main loop for a source")
+                logging.getLogger().error('Error occured. Source %s exits with state %s',
+                                          self.id, self.get_state_name())
+                break
+        self.state.set(State.OFFLINE)
+        logging.getLogger().info(f'Source {self.name} ({self.id}) is ending its loop.')
+
+
+    def set_loglevel_value(self, log_level):
+        """Assumes log_level is a string corresponding to the supported logging-module levels."""
+        with self.loglevel.get_lock():
+            # Convert from string to int form using technique
+            # suggested by logging module
+            self.loglevel.value = getattr(logging, log_level)
+
+
+    def get_state_value(self):
+        with self.state.get_lock():
+            return self.state.value
+
+
+    def get_state(self):
+        return self.state.get()
+
+
+    def get_state_name(self):
+        return self.get_state().name
+
+
+    def get_loglevel(self):
+        with self.loglevel.get_lock():
+            return self.loglevel.value

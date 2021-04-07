@@ -335,7 +335,9 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         return "OK"
 
     def stop_source(self, source):
-        raise NotImplementedError
+        source.manager.state.set(ProcessingState.State['SHUTDOWN'])
+        source.wait_while(ProcessingState.State['SHUTDOWN'])
+        source.join()
 
     def rpc_stop_source(self):
         raise NotImplementedError
@@ -344,7 +346,11 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         raise NotImplementedError
 
     def rpc_stop_sources(self):
-        raise NotImplementedError
+        with self.source_workers.access() as workers:
+            for source_name, source_worker in workers.items():
+                self.stop_source(source_worker)
+            self.logger.info('Stopped all sources: %s' % workers.keys())
+        return 'OK'
 
     def rpc_kill_source(self, source, timeout=None):
         raise NotImplementedError

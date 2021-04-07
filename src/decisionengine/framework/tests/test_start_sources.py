@@ -30,21 +30,24 @@ def deserver_mock_data_block(mock_data_block):  # noqa: F811
     server.stop_channels()
 
 
-#def test_start_sources(deserver_mock_data_block, caplog):
-#    deserver = deserver_mock_data_block
-#
-#    # Verify that nothing is active
-#    output = deserver.rpc_status()
-#    assert "No channels are currently active" in output
-#
-#    output = deserver.rpc_print_products()
-#    assert "No channels are currently active" in output
-#
-#    # Add channel config to directory
-#    channel_config = os.path.join(TEST_CHANNEL_CONFIG_PATH, 'test_channel.jsonnet')  # noqa: F405
-#    new_config_path = shutil.copy(channel_config, EMPTY_DIR.name)
-#    assert os.path.exists(new_config_path)
-#
-#    # Start the Sources present in the config file
-#    output = deserver.rpc_start_sources()
-#    assert output == 'OK' and 'Source source1 started' in caplog.text
+def test_start_sources(deserver_mock_data_block, caplog):
+    deserver = deserver_mock_data_block
+
+    # Verify that nothing is active
+    output = deserver.rpc_status()
+    assert "No channels are currently active" in output
+
+    output = deserver.rpc_print_products()
+    assert "No channels are currently active" in output
+
+    # Add channel config to directory
+    channel_config = os.path.join(TEST_CHANNEL_CONFIG_PATH, 'test_channel.jsonnet')  # noqa: F405
+    new_config_path = shutil.copy(channel_config, EMPTY_DIR.name)
+    assert os.path.exists(new_config_path)
+
+    # Start the Sources present in the config file
+    output = deserver.rpc_start_sources()
+    assert output == 'OK' and 'Source source1 started' in caplog.text
+
+    output = deserver.rpc_stop_sources()
+    assert output == 'OK' and 'Stopped all sources:' in caplog.text
