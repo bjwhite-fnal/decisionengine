@@ -338,6 +338,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         source.manager.state.set(ProcessingState.State['SHUTDOWN'])
         source.wait_while(ProcessingState.State['SHUTDOWN'])
         source.join()
+        assert not source.is_alive()
 
     def rpc_stop_source(self):
         raise NotImplementedError
