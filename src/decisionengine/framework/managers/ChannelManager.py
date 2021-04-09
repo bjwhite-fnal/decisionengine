@@ -19,7 +19,7 @@ _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
 
 
-def _create_worker(module_name, class_name, parameters):
+def _create_runner(module_name, class_name, parameters):
     """
     Create instance of dynamically loaded module
     """
@@ -28,7 +28,7 @@ def _create_worker(module_name, class_name, parameters):
     return class_type(parameters)
 
 
-class Worker:
+class ChannelRunner:
     """
     Provides interface to loadable modules and events for synchronization of execution
     """
@@ -36,30 +36,30 @@ class Worker:
     def __init__(self, conf_dict):
         """
         :type conf_dict: :obj:`dict`
-        :arg conf_dict: configuration dictionary describing the worker
+        :arg conf_dict: configuration dictionary describing the runner
         """
 
-        self.worker = _create_worker(conf_dict['module'],
+        self.runner = _create_runner(conf_dict['module'],
                                      conf_dict['name'],
                                      conf_dict['parameters'])
         self.module = conf_dict['module']
-        self.name = self.worker.__class__.__name__
+        self.name = self.runner.__class__.__name__
         self.schedule = conf_dict.get('schedule', _DEFAULT_SCHEDULE)
         self.run_counter = 0
         self.data_updated = threading.Event()
         self.stop_running = threading.Event()
-        logging.getLogger("decision_engine").debug('Creating channel execution worker: module=%s name=%s parameters=%s schedule=%s',
+        logging.getLogger("decision_engine").debug('Creating channel execution runner: module=%s name=%s parameters=%s schedule=%s',
                                                    self.module, self.name, conf_dict['parameters'], self.schedule)
 
 
-def _make_workers_for(configs):
-    return {name: Worker(e) for name, e in configs.items()}
+def _make_runners_for(configs):
+    return {name: ChannelRunner(e) for name, e in configs.items()}
 
 
 class Channel:
     """
     Decision Channel.
-    Instantiates workers according to channel configuration
+    Instantiates runners according to channel configuration
     """
 
     def __init__(self, channel_dict):
@@ -69,13 +69,13 @@ class Channel:
         """
 
         logging.getLogger("decision_engine").debug('Creating channel source')
-        self.sources = _make_workers_for(channel_dict['sources'])
+        self.sources = _make_runners_for(channel_dict['sources'])
         logging.getLogger("decision_engine").debug('Creating channel transform')
-        self.transforms = _make_workers_for(channel_dict['transforms'])
+        self.transforms = _make_runners_for(channel_dict['transforms'])
         logging.getLogger("decision_engine").debug('Creating channel logicengine')
-        self.le_s = _make_workers_for(channel_dict['logicengines'])
+        self.le_s = _make_runners_for(channel_dict['logicengines'])
         logging.getLogger("decision_engine").debug('Creating channel publisher')
-        self.publishers = _make_workers_for(channel_dict['publishers'])
+        self.publishers = _make_runners_for(channel_dict['publishers'])
         self.channel_manager = channel_dict.get('channel_manager', {})
 
 
@@ -108,8 +108,8 @@ class ChannelManager:
         self.lock = threading.Lock()
         # The rest of this function will go away once the source-proxy
         # has been reimplemented.
-        for src_worker in self.channel.sources.values():
-            src_worker.worker.post_create(global_config)
+        for src_runner in self.channel.sources.values():
+            src_runner.runner.post_create(global_config)
 
     def wait_for_all(self, events_done):
         """
@@ -295,15 +295,15 @@ class ChannelManager:
         Get the data from source
         and put it into the data block
 
-        :type src: :obj:`~Worker`
-        :arg src: source Worker
+        :type src: :obj:`~ChannelRunner`
+        :arg src: source ChannelRunner
         """
 
         # If channel manager is in offline state, do not keep executing sources.
         while not self.state.should_stop():
             try:
                 logging.getLogger().info(f'Src {src.name} calling acquire')
-                data = src.worker.acquire()
+                data = src.runner.acquire()
                 logging.getLogger().info(f'Src {src.name} acquire retuned')
                 logging.getLogger().info(f'Src {src.name} filling header')
                 if data:
@@ -387,13 +387,13 @@ class ChannelManager:
         """
         Run a transform
 
-        :type transform: :obj:`~Worker`
-        :arg transform: source Worker
+        :type transform: :obj:`~ChannelRunner`
+        :arg transform: source ChannelRunner
         :type data_block: :obj:`~datablock.DataBlock`
         :arg data_block: data block
         """
         data_to = self.channel.channel_manager.get('data_TO', _TRANSFORMS_TO)
-        consume_keys = transform.worker.consumes()
+        consume_keys = transform.runner.consumes()
 
         logging.getLogger().info('transform: %s expected keys: %s provided keys: %s',
                                  transform.name, consume_keys, list(data_block.keys()))
@@ -405,7 +405,7 @@ class ChannelManager:
                 logging.getLogger().info('run transform %s', transform.name)
                 try:
                     with data_block.lock:
-                        data = transform.worker.transform(data_block)
+                        data = transform.runner.transform(data_block)
                     logging.getLogger().debug(f'transform returned {data}')
                     t = time.time()
                     header = datablock.Header(data_block.channel_manager_id,
@@ -445,7 +445,7 @@ class ChannelManager:
                                          self.channel.le_s[le].name)
                 logging.getLogger().debug('run logic engine %s %s',
                                           self.channel.le_s[le].name, data_block)
-                rc = self.channel.le_s[le].worker.evaluate(data_block)
+                rc = self.channel.le_s[le].runner.evaluate(data_block)
                 le_list.append(rc)
                 logging.getLogger().info('run logic engine %s done',
                                          self.channel.le_s[le].name)
@@ -493,7 +493,7 @@ class ChannelManager:
                     log.info(f'run publisher {name}')
                     log.debug(f'run publisher {name} {data_block}')
                     try:
-                        publisher.worker.publish(data_block)
+                        publisher.runner.publish(data_block)
                     except KeyError as e:
                         if self.state.should_stop():
                             log.warning(f"ChannelManager stopping, ignore exception {name} publish() call: {e}")

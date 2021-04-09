@@ -19,7 +19,7 @@ _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
 
 
-def _create_worker(module_name, class_name, parameters):
+def _create_runner(module_name, class_name, parameters):
     """
     Create instance of dynamically loaded module
     """
@@ -28,7 +28,7 @@ def _create_worker(module_name, class_name, parameters):
     return class_type(parameters)
 
 
-class Worker:
+class SourceRunner:
     """
     Provides interface to loadable modules and events for synchronization of execution
     """
@@ -36,30 +36,30 @@ class Worker:
     def __init__(self, conf_dict):
         """
         :type conf_dict: :obj:`dict`
-        :arg conf_dict: configuration dictionary describing the worker
+        :arg conf_dict: configuration dictionary describing the runner
         """
 
-        self.worker = _create_worker(conf_dict['module'],
+        self.runner = _create_runner(conf_dict['module'],
                                      conf_dict['name'],
                                      conf_dict['parameters'])
         self.module = conf_dict['module']
-        self.name = self.worker.__class__.__name__
+        self.name = self.runner.__class__.__name__
         self.schedule = conf_dict.get('schedule', _DEFAULT_SCHEDULE)
         self.run_counter = 0
         self.data_updated = multiprocessing.Event()
         self.stop_running = multiprocessing.Event()
-        logging.getLogger("decision_engine").debug('Creating source execution worker: module=%s name=%s parameters=%s schedule=%s',
+        logging.getLogger("decision_engine").debug('Creating source execution runner: module=%s name=%s parameters=%s schedule=%s',
                                                    self.module, self.name, conf_dict['parameters'], self.schedule)
 
 
-def _make_worker_for(src_config):
-    return {name: Worker(e) for name, e in configs.items()}
+def _make_runner_for(src_config):
+    return {name: SourceRunner(e) for name, e in configs.items()}
 
 
 class Source:
     """
     Decision Source.
-    Instantiates Source workers according to the provided Source configuration
+    Instantiates Source runners according to the provided Source configuration
     """
 
     def __init__(self, name, source_dict):
@@ -68,7 +68,7 @@ class Source:
         :arg source_dict: Source configuration
         """
         self.name = name
-        self.source_worker = Worker(source_dict) 
+        self.source_runner = SourceRunner(source_dict)
 
 
 class SourceManager:
@@ -101,7 +101,7 @@ class SourceManager:
 
 
     def run(self):
-        src = self.source.source_worker
+        src = self.source.source_runner
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Source Manager {self.id}')
 
@@ -113,7 +113,7 @@ class SourceManager:
             try:
                 # Run the source
                 logging.getLogger().info(f'Source {src.name} calling acquire')
-                data = src.worker.acquire()
+                data = src.runner.acquire()
                 logging.getLogger().info(f'Source {src.name} acquire retuned')
                 logging.getLogger().info(f'Source {src.name} filling header')
 
