@@ -30,7 +30,7 @@ def deserver_mock_data_block(mock_data_block):  # noqa: F811
     server.stop_channels()
 
 
-def test_start_sources(deserver_mock_data_block, caplog):
+def test_sources(deserver_mock_data_block, caplog):
     deserver = deserver_mock_data_block
 
     # Verify that nothing is active
@@ -49,5 +49,6 @@ def test_start_sources(deserver_mock_data_block, caplog):
     output = deserver.rpc_start_sources()
     assert output == 'OK' and 'Source source1 started' in caplog.text
 
+    # What gets started, must be stopped
     output = deserver.rpc_stop_sources()
     assert output == 'OK' and 'Stopped all sources:' in caplog.text
