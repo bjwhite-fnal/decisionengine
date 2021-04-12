@@ -27,6 +27,7 @@ import decisionengine.framework.dataspace.dataspace as dataspace
 import decisionengine.framework.managers.ProcessingState as ProcessingState
 import decisionengine.framework.managers.ChannelManager as ChannelManager
 import decisionengine.framework.managers.SourceManager as SourceManager
+import decisionengine.framework.managers.SourceSubscriptionManager as SourceSubscriptionManager
 
 
 class StopState(enum.Enum):

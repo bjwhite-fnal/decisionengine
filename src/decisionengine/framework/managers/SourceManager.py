@@ -6,8 +6,6 @@ import logging
 import time
 import multiprocessing
 
-#import pandas
-
 from decisionengine.framework.dataspace import dataspace
 from decisionengine.framework.dataspace import datablock
 from decisionengine.framework.managers.ComponentManager import create_runner, ComponentManager
