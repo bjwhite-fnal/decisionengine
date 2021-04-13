@@ -64,6 +64,10 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         self.reaper = dataspace.Reaper(self.global_config)
         self.logger.info("DecisionEngine started on {}".format(server_address))
 
+        self.source_subscription_manager = SourceSubscriptionManager.SourceSubscriptionManager()
+        self.source_subscription_manager.start()
+        self.logger.info("DecisionEngine SourceSubscriptionManager started in thread {}".format(self.source_subscription_manager.ident))
+
     def get_logger(self):
         return self.logger
 
@@ -347,10 +351,16 @@ class DecisionEngine(socketserver.ThreadingMixIn,
     def stop_sources(self):
         raise NotImplementedError
 
-    def rpc_stop_sources(self):
+    def rpc_stop_sources(self, timeout=None):
+        if timeout is None:
+            timeout = self.global_config.get("shutdown_timeout", 10)
+
+        self.source_subscription_manager.keep_running.value = 0 # Boolean ctype primitives do not exist
+        self.source_subscription_manager.join()
+        self.logger.info('Stopped Source Subscription Manager.')
         with self.source_workers.access() as workers:
             for source_name, source_worker in workers.items():
-                self.stop_source(source_worker)
+                self.stop_worker(source_worker, timeout)
             self.logger.info('Stopped all sources: %s' % workers.keys())
         return 'OK'
 
