@@ -27,6 +27,7 @@ def deserver_mock_data_block(mock_data_block):  # noqa: F811
     server.start_channels()
     server.block_while(State.BOOT)
     yield server
+    server.rpc_stop_sources()
     server.stop_channels()
 
 
