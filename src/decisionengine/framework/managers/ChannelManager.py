@@ -74,10 +74,11 @@ class ChannelManager(ComponentManager):
     Channel Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, channel_dict, global_config):
+    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks):
         super().__init__(name, generation_id, global_config)
 
         self.channel = Channel(channel_dict)
+        self.current_t0_data_blocks = current_t0_data_blocks
         self.lock = threading.Lock()
         # The rest of this function will go away once the source-proxy
         # has been reimplemented.

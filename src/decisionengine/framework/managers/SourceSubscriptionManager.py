@@ -2,8 +2,9 @@
 Source Subscription Manager
 """
 
-import time
+import logging
 import queue
+import time
 
 # The manager will run in a thread
 import threading
@@ -26,9 +27,9 @@ class SourceSubscriptionManager(threading.Thread):
     def run(self):
         while self.keep_running.value:
             try:
+                # source_new_data = (source_name, (data, header))
                 source_new_data = self.data_block_queue.get(timeout=1)
             except Queue.Empty:
                 pass
-            source, new_t0_data_block = source_new_data
-            self.current_t0_data_blocks[source] = new_t0_data_block
-        self.logger.info('Source Subscription Manager is stopping.')
+            source, new_block_info = source_new_data
+            self.current_t0_data_blocks[source] = new_block_info

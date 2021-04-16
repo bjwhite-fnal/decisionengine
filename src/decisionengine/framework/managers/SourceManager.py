@@ -60,12 +60,16 @@ class SourceManager(ComponentManager):
     Source Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, source_config, global_config):
+    def __init__(self, name, generation_id, source_config, global_config, data_block_queue):
         super().__init__(name, generation_id, global_config)
 
         self.source = Source(self.name, source_config)
+        self.data_block_queue = data_block_queue
         self.lock = multiprocessing.Lock()
 
+    def data_block_send(self, source_name, data, header):
+        block_info = (source_name, (data, header))
+        self.data_block_queue.put(block_info)
 
     def run(self):
         src = self.source.source_runner
@@ -96,8 +100,12 @@ class SourceManager(ComponentManager):
                     #   other_source_data_block = get_t1_data_block_from_other_source()
                     # data = data.do_dep_based_processing(data, other_source_data_block)
 
+                    # Put the data block into the database
                     self.data_block_put(data, header, self.data_block_t0)
                     logging.getLogger().info(f'Source {src.name} data block put done')
+                    # Send the datablock to the DecisionEngine process, so that channels can use the info without the database
+                    self.data_block_send(self.source.name, data, header)
+                    logging.getLogger().info(f'Source {src.name} data block send done')
                 else:
                     logging.getLogger().warning(f'Source {src.name} acquire retuned no data')
                 
