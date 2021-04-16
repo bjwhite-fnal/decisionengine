@@ -60,11 +60,13 @@ class SourceManager(ComponentManager):
     Source Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, source_config, global_config, data_block_queue):
+    def __init__(self, name, generation_id, source_config, global_config, data_block_queue, data_updated):
         super().__init__(name, generation_id, global_config)
 
         self.source = Source(self.name, source_config)
         self.data_block_queue = data_block_queue
+        self.data_updated = data_updated
+        self.data_updated[self.source.name] = False
         self.lock = multiprocessing.Lock()
 
     def data_block_send(self, source_name, data, header):
@@ -109,9 +111,9 @@ class SourceManager(ComponentManager):
                 else:
                     logging.getLogger().warning(f'Source {src.name} acquire retuned no data')
                 
-                ## Mark that this source has run, and notify those who care
+                ## Mark that this source has run so that channels may proceed
                 src.run_counter += 1
-                src.data_updated.set()
+                self.data_updated[self.source.name] = True
                 logging.getLogger().info(f'Source {src.name} {src.module} finished cycle')
 
                 # If its the first time, update state so that anything waiting for the source to run for the first time proceeds

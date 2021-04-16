@@ -130,6 +130,7 @@ class ChannelManager(ComponentManager):
         """
         Channel Manager main loop
         """
+        ######## OLD SOURCE STARTUP ###################
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Channel Manager {self.id}')
         done_events, source_threads = self.start_sources(self.data_block_t0)
@@ -145,6 +146,7 @@ class ChannelManager(ComponentManager):
             return
 
         self.decision_cycle()
+        ######## END OLD SOURCE STARTUP ###################
         self.state.set(State.STEADY)
 
         while not self.state.should_stop():

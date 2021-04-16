@@ -298,7 +298,8 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                                                generation_id,
                                                source_config,
                                                self.global_config,
-                                               self.source_subscription_manager.data_block_queue)
+                                               self.source_subscription_manager.data_block_queue,
+                                               self.source_subscription_manager.data_updated)
         worker = SourceWorker(source_manager, self.global_config['logger'])
         with self.source_workers.access() as workers:
             workers[source_name] = worker
