@@ -2,6 +2,8 @@
 import random
 import string
 import threading
+import queue
+import multiprocessing
 
 import psycopg2
 import pytest
@@ -43,6 +45,7 @@ class DETestWorker(threading.Thread):
 
     def run(self):
         self.de_server.reaper_start(delay=self.reaper_start_delay_seconds)
+        self.de_server.start_sources()
         self.de_server.start_channels()
         self.de_server.serve_forever()
 
@@ -74,6 +77,10 @@ def DEServer(conf_path=None, conf_override=None,
             host_port = (host, get_random_port())
 
         db_info = {}
+
+        _manager = multiprocessing.Manager()
+        _data_updated = _manager.dict()
+        _current_t0_data_blocks = multiprocessing.Queue()
 
         proc_fixture = request.getfixturevalue(pg_prog_name)
         db_info['host'] = proc_fixture.host

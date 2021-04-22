@@ -288,6 +288,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
 
     def rpc_stop(self):
         self.shutdown()
+        self.stop_sources()
         self.stop_channels()
         self.reaper_stop()
         return "OK"
@@ -341,13 +342,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         self.start_sources()
         return "OK"
 
-    def rpc_stop_source(self):
-        raise NotImplementedError
-
-    def stop_sources(self):
-        raise NotImplementedError
-
-    def rpc_stop_sources(self, timeout=None):
+    def stop_sources(self, timeout=None):
         if timeout is None:
             timeout = self.global_config.get("shutdown_timeout", 10)
 
@@ -358,7 +353,13 @@ class DecisionEngine(socketserver.ThreadingMixIn,
             for source_name, source_worker in workers.items():
                 self.stop_worker(source_worker, timeout)
             self.logger.info('Stopped all sources: %s' % workers.keys())
+
+    def rpc_stop_sources(self, timeout=None):
+        self.stop_sources(timeout)
         return 'OK'
+
+    def rpc_stop_source(self):
+        raise NotImplementedError
 
     def rpc_kill_source(self, source, timeout=None):
         raise NotImplementedError
@@ -375,7 +376,8 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                                                generation_id,
                                                channel_config,
                                                self.global_config,
-                                               self.source_subscription_manager.current_t0_data_blocks)
+                                               self.source_subscription_manager.current_t0_data_blocks,
+                                               self.source_subscription_manager.data_updated)
         worker = ChannelWorker(channel_manager, self.global_config['logger'])
         with self.channel_workers.access() as workers:
             workers[channel_name] = worker

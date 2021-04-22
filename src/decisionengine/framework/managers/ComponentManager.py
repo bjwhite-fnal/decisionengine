@@ -93,7 +93,7 @@ class ComponentManager:
 
     def take_offline(self, current_data_block):
         """
-        offline and stop channel manager
+        offline and stop this component manager
         """
         self.state.set(State.OFFLINE)
         # invalidate data block

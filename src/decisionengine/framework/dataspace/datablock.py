@@ -202,7 +202,7 @@ class DataBlock(object):
             self.sequence_id = sequence_id
         else:
             self.sequence_id = self.store_channel_manager(name, channel_manager_id)
-        if generation_id:
+        if generation_id is not None:
             self.generation_id = generation_id
         else:
             self.generation_id = self.dataspace.get_last_generation_id(

@@ -1,5 +1,6 @@
 import threading
 import os
+import multiprocessing
 
 import pytest
 
@@ -13,6 +14,9 @@ _CONFIG_PATH = os.path.join(_CWD, "../../tests/etc/decisionengine")
 _CHANNEL_CONFIG_DIR = os.path.join(_CWD, 'channels')
 
 _global_config = ValidConfig(policies.global_config_file(_CONFIG_PATH))
+_manager = multiprocessing.Manager()
+_data_updated = _manager.dict()
+_current_t0_data_blocks = multiprocessing.Queue()
 
 
 def channel_config(name):
@@ -20,7 +24,8 @@ def channel_config(name):
 
 
 def channel_manager_for(name):
-    return ChannelManager(name, 1, channel_config(name), _global_config)
+    return ChannelManager(name, 1, channel_config(name), _global_config,
+        _current_t0_data_blocks, _data_updated)
 
 
 class RunChannel:
@@ -47,6 +52,7 @@ def test_channel_manager_construction(mock_data_block):  # noqa: F811
 @pytest.mark.usefixtures("mock_data_block")
 def test_take_channel_manager_offline(mock_data_block):  # noqa: F811
     with RunChannel('test_channel') as channel_manager:
+        _data_updated['source1'] = True
         channel_manager.state.wait_until(State.STEADY)
         channel_manager.take_offline(None)
         assert channel_manager.state.has_value(State.OFFLINE)

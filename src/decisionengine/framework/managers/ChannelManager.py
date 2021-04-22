@@ -74,11 +74,13 @@ class ChannelManager(ComponentManager):
     Channel Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks):
+    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks, data_updated):
         super().__init__(name, generation_id, global_config)
 
+        self.all_sources = list(channel_dict['sources'].keys())
         self.channel = Channel(channel_dict)
         self.current_t0_data_blocks = current_t0_data_blocks
+        self.data_updated =  data_updated
         self.lock = threading.Lock()
         # The rest of this function will go away once the source-proxy
         # has been reimplemented.
@@ -126,6 +128,28 @@ class ChannelManager(ComponentManager):
             logging.getLogger().exception("Unexpected error!")
             raise
 
+    def wait_for_sources(self, channel_sources):
+        """
+        Wait for all sources this channel is interested in to finish their runs
+
+        :type channel_sources: :obj:`list`
+        :arg channel_sources: list of sources that need to be polled for completion
+        """
+        logging.getLogger().info('Waiting for all sources to run')
+        all_ready = False
+        while not all_ready:
+            sources_ran = []
+            for source in channel_sources:
+                try:
+                    source_ran = self.data_updated[source]
+                    sources_ran.append(source_ran)
+                except KeyError:
+                    pass
+            if len(sources_ran) > 0 and all(sources_ran):
+                all_ready = True
+            else:
+                time.sleep(1)
+
     def run(self):
         """
         Channel Manager main loop
@@ -137,6 +161,7 @@ class ChannelManager(ComponentManager):
         # This is a boot phase
         # Wait until all sources run at least one time
         self.wait_for_all(done_events)
+        self.wait_for_sources(self.all_sources)
         logging.getLogger().info('All sources finished')
         if not self.state.has_value(State.BOOT):
             for thread in source_threads:
