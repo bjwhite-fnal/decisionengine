@@ -24,6 +24,7 @@ def deserver_mock_data_block(mock_data_block):  # noqa: F811
                                                                  _CHANNEL_CONFIG_PATH,
                                                                  parse_program_options([f'--port={_port}']))
     server = _create_de_server(global_config, channel_config_handler)
+    server.start_sources()
     server.start_channels()
     server.block_while(State.BOOT)
     yield server
