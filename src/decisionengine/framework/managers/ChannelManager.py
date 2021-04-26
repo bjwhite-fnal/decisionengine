@@ -172,11 +172,12 @@ class ChannelManager(ComponentManager):
 
         self.decision_cycle()
         ######## END OLD SOURCE STARTUP ###################
+
         self.state.set(State.STEADY)
 
         while not self.state.should_stop():
             try:
-                self.wait_for_any(done_events)
+                self.wait_for_any(done_events) # TODO: This should be removed in lieu of the wait for all sources initial runs
                 self.decision_cycle()
                 if self.state.should_stop():
                     logging.getLogger().info(f'Channel Manager {self.id} received stop signal and exits')

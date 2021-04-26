@@ -45,7 +45,6 @@ class DETestWorker(threading.Thread):
 
     def run(self):
         self.de_server.reaper_start(delay=self.reaper_start_delay_seconds)
-        import pdb; pdb.set_trace()
         self.de_server.start_sources()
         self.de_server.start_channels()
         self.de_server.serve_forever()
