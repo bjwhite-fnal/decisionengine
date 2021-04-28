@@ -128,9 +128,9 @@ class ChannelManager(ComponentManager):
             logging.getLogger().exception("Unexpected error!")
             raise
 
-    def wait_for_sources(self, channel_sources):
+    def wait_for_all_sources(self, channel_sources):
         """
-        Wait for all sources this channel is interested in to finish their runs
+        Wait for all sources this channel is interested in to finish their execution
 
         :type channel_sources: :obj:`list`
         :arg channel_sources: list of sources that need to be polled for completion
@@ -144,11 +144,43 @@ class ChannelManager(ComponentManager):
                     source_ran = self.data_updated[source]
                     sources_ran.append(source_ran)
                 except KeyError:
+                    # If the source has not run yet, this is to be expected
                     pass
             if len(sources_ran) > 0 and all(sources_ran):
                 all_ready = True
             else:
                 time.sleep(1)
+
+    def wait_for_any_source(self, channel_sources):
+        """
+        Waits for any source this channel is interested in to post an updated data block before allowing continuation
+
+        :type channel_sources: :obj:`list`
+        :arg channel_sources: list of sources to be watched for updated data
+        """
+        logging.getLogger().info('Waiting for any source to run')
+        any_ready = False
+        while True:
+            sources_ran = []
+            for source in channel_sources:
+                source_ran = self.data_updated[source]
+                sources_ran.append(source_ran)
+            if len(sources_ran) > 0 and any(sources_ran):
+                any_ready = True
+                updated_sources = [ source for source in sources_ran if self.data_updated[source] is True ]
+                return updated_sources
+            else:
+                time.sleep(1)
+
+    def reset_source_flags(self, sources):
+        """
+        Sets self.data_updated to False for the sources which are being used by this decision cycle
+
+        :type sources: :obj:`list`
+        :arg sources: list of source names that are to be set back to the "not-updated" state
+        """
+        for source in sources:
+            self.data_updated[source] = False
 
     def run(self):
         """
@@ -161,7 +193,7 @@ class ChannelManager(ComponentManager):
         # This is a boot phase
         # Wait until all sources run at least one time
         self.wait_for_all(done_events)
-        self.wait_for_sources(self.all_sources)
+        self.wait_for_all_sources(self.all_sources)
         logging.getLogger().info('All sources finished')
         if not self.state.has_value(State.BOOT):
             for thread in source_threads:
@@ -178,6 +210,8 @@ class ChannelManager(ComponentManager):
         while not self.state.should_stop():
             try:
                 self.wait_for_any(done_events) # TODO: This should be removed in lieu of the wait for all sources initial runs
+                updated_sources = self.wait_for_any_source(self.all_sources)
+                self.reset_source_flags(updated_sources)
                 self.decision_cycle()
                 if self.state.should_stop():
                     logging.getLogger().info(f'Channel Manager {self.id} received stop signal and exits')

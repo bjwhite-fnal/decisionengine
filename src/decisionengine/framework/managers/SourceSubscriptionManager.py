@@ -21,9 +21,9 @@ class SourceSubscriptionManager(threading.Thread):
         self.keep_running = multiprocessing.Value('i', 1)
         self.data_block_queue = multiprocessing.Queue()
 
-        current_manager = multiprocessing.Manager()
-        self.current_t0_data_blocks = current_manager.dict()
-        self.data_updated = current_manager.dict()
+        manager = multiprocessing.Manager()
+        self.current_t0_data_blocks = manager.dict()
+        self.data_updated = manager.dict()
 
     def run(self):
         while self.keep_running.value:
