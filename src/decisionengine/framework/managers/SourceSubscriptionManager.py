@@ -33,4 +33,4 @@ class SourceSubscriptionManager(threading.Thread):
                 source, new_block_info = source_new_data
                 self.current_t0_data_blocks[source] = new_block_info
             except queue.Empty:
-                pass
+                time.sleep(1)

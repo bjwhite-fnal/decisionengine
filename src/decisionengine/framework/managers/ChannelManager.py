@@ -150,6 +150,8 @@ class ChannelManager(ComponentManager):
                 all_ready = True
             else:
                 time.sleep(1)
+                if self.state.should_stop():
+                    break
 
     def wait_for_any_source(self, channel_sources):
         """
@@ -159,18 +161,18 @@ class ChannelManager(ComponentManager):
         :arg channel_sources: list of sources to be watched for updated data
         """
         logging.getLogger().info('Waiting for any source to run')
-        any_ready = False
         while True:
             sources_ran = []
             for source in channel_sources:
                 source_ran = self.data_updated[source]
-                sources_ran.append(source_ran)
-            if len(sources_ran) > 0 and any(sources_ran):
-                any_ready = True
-                updated_sources = [ source for source in sources_ran if self.data_updated[source] is True ]
-                return updated_sources
+                if source_ran:
+                    sources_ran.append(source)
+            if len(sources_ran) > 0:
+                return sources_ran
             else:
                 time.sleep(1)
+                if self.state.should_stop():
+                    break
 
     def reset_source_flags(self, sources):
         """
@@ -202,7 +204,10 @@ class ChannelManager(ComponentManager):
                 f'Error occured during initial run of sources. Channel Manager {self.name} exits')
             return
 
-        self.decision_cycle()
+        # Don't need to do this... If everything already ran, then any_ran is true
+        # at the start of the real loop below
+        #self.decision_cycle()
+        #self.reset_source_flags(self.all_sources)
         ######## END OLD SOURCE STARTUP ###################
 
         self.state.set(State.STEADY)

@@ -111,7 +111,7 @@ class SourceManager(ComponentManager):
                 else:
                     logging.getLogger().warning(f'Source {src.name} acquire retuned no data')
                 
-                ## Mark that this source has run so that channels may proceed
+                # Mark that this source has run so that channels may proceed
                 src.run_counter += 1
                 self.data_updated[self.source.name] = True
                 logging.getLogger().info(f'Source {src.name} {src.module} finished cycle')

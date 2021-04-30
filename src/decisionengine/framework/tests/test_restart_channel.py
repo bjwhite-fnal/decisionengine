@@ -28,7 +28,7 @@ def deserver_mock_data_block(mock_data_block):  # noqa: F811
     server.start_channels()
     server.block_while(State.BOOT)
     yield server
-    server.rpc_stop_sources()
+    server.stop_sources()
     server.stop_channels()
 
 
@@ -47,6 +47,6 @@ def test_restart_channel(deserver_mock_data_block):
     output = deserver_mock_data_block.rpc_status()
     assert "No channels are currently active" in output
 
-    # Take channel offline
+    # Start Channel back up
     output = deserver_mock_data_block.rpc_start_channel('test_channel')
     assert output == 'OK'
