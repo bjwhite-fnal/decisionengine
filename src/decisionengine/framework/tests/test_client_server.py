@@ -136,7 +136,7 @@ def test_client_print_product(deserver):
         "| key2      |\n" \
         "+-----------+"
 
-# Test --format json
+     Test --format json
     output = deserver.de_client_run_cli('--print-product', 'foo', '--format', 'json')
     assert output == \
         'Product foo:  Found in channel test_channel\n' \
