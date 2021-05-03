@@ -126,9 +126,9 @@ class SourceManager(ComponentManager):
                     if stop:
                         logging.getLogger().info(f'Received stop_running signal for {src.name}')
                         break
-                    else:
-                        logging.getLogger().info(f'Source {src.name} runs only once')
-                        break
+                else:
+                    logging.getLogger().info(f'Source {src.name} runs only once')
+                    break
             except Exception:  # pragma: no cover
                 logging.getLogger().exception("Exception in the main loop for a source")
                 logging.getLogger().error('Error occured. Source %s exits with state %s',
