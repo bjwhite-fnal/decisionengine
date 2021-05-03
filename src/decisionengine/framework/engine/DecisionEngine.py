@@ -83,17 +83,17 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         with self.channel_workers.unguarded_access() as workers:
             if not workers:
                 self.logger.info('No active channels.')
-            for tm in workers.values():
-                if tm.is_alive():
-                    tm.wait_until(state)
+            for cm in workers.values():
+                if cm.is_alive():
+                    cm.wait_until(state)
 
     def block_while(self, state):
         with self.channel_workers.unguarded_access() as workers:
             if not workers:
                 self.logger.info('No active channels.')
-            for tm in workers.values():
-                if tm.is_alive():
-                    tm.wait_while(state)
+            for cm in workers.values():
+                if cm.is_alive():
+                    cm.wait_while(state)
 
     def rpc_block_while(self, state_str):
         allowed_state = None
@@ -161,12 +161,12 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                     continue
                 found = True
                 txt += " Found in channel {}\n".format(ch)
-                tm = self.dataspace.get_channel_manager(ch)
+                cm = self.dataspace.get_channel_manager(ch)
                 try:
                     data_block = datablock.DataBlock(self.dataspace,
                                                      ch,
-                                                     channel_manager_id=tm['channel_manager_id'],
-                                                     sequence_id=tm['sequence_id'])
+                                                     channel_manager_id=cm['channel_manager_id'],
+                                                     sequence_id=cm['sequence_id'])
                     data_block.generation_id -= 1
                     df = data_block[product]
                     df = pd.read_json(df.to_json())
@@ -221,11 +221,11 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                                                                                           worker.manager_id,
                                                                                           worker.get_state_name(),
                                                                                           width=width)
-                tm = self.dataspace.get_channel_manager(ch)
+                cm = self.dataspace.get_channel_manager(ch)
                 data_block = datablock.DataBlock(self.dataspace,
                                                  ch,
-                                                 channel_manager_id=tm['channel_manager_id'],
-                                                 sequence_id=tm['sequence_id'])
+                                                 channel_manager_id=cm['channel_manager_id'],
+                                                 sequence_id=cm['sequence_id'])
                 data_block.generation_id -= 1
                 channel_config = self.channel_config_loader.get_channels()[ch]
                 produces = self.channel_config_loader.get_produces(channel_config)
