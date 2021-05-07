@@ -85,7 +85,7 @@ class ComponentManager:
             return
         logging.getLogger().debug(f'data_block_put {data}')
         with data_block.lock:
-            metadata = datablock.Metadata(data_block.channel_manager_id,
+            metadata = datablock.Metadata(data_block.component_manager_id,
                                           state='END_CYCLE',
                                           generation_id=data_block.generation_id)
             for key, product in data.items():

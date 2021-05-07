@@ -33,16 +33,16 @@ def data():
         "channel_manager": [
             {
                 "name": "channel_manager1",
-                "channel_manager_id": "1"
+                "component_manager_id": "1"
             },
             {
                 "name": "channel_manager2",
-                "channel_manager_id": "2"
+                "component_manager_id": "2"
             }
         ],
         "dataproduct": [
             {
-                "channel_manager_id": "1",
+                "component_manager_id": "1",
                 "generation_id": "1",
                 "key": "test_key1",
                 "value": "test_value1"
@@ -54,13 +54,13 @@ def data():
 def channel_manager():
     return {
         "name": "new_channel_manager",
-        "channel_manager_id": "123"
+        "component_manager_id": "123"
     }
 
 @pytest.fixture(scope="session")
 def dataproduct():
     return {
-        "channel_manager_id": "1",
+        "component_manager_id": "1",
         "generation_id": "2",
         "key": "new_key",
         "value": "new_value"
@@ -69,13 +69,13 @@ def dataproduct():
 @pytest.fixture(scope="session")
 def header(data):
     return Header(
-        data["channel_manager"][0]["channel_manager_id"]
+        data["channel_manager"][0]["component_manager_id"]
     )
 
 @pytest.fixture(scope="session")
 def metadata(data):
     return Metadata(
-        data["channel_manager"][0]["channel_manager_id"]
+        data["channel_manager"][0]["component_manager_id"]
     )
 
 def test_generate_insert_query():
@@ -91,21 +91,21 @@ def test_create_tables(datasource):
     assert datasource.create_tables()
 
 def test_store_channel_manager(datasource, channel_manager):
-    result = datasource.store_channel_manager(channel_manager["name"], channel_manager["channel_manager_id"])
+    result = datasource.store_channel_manager(channel_manager["name"], channel_manager["component_manager_id"])
     assert result > 0
 
 def test_get_channel_manager(datasource, channel_manager, data):
     # test valid channel_manager
-    result = datasource.get_channel_manager(data["channel_manager"][0]["name"], data["channel_manager"][0]["channel_manager_id"])
+    result = datasource.get_channel_manager(data["channel_manager"][0]["name"], data["channel_manager"][0]["component_manager_id"])
     assert result["name"] == data["channel_manager"][0]["name"]
-    assert result["channel_manager_id"] == data["channel_manager"][0]["channel_manager_id"]
+    assert result["component_manager_id"] == data["channel_manager"][0]["component_manager_id"]
 
     result = datasource.get_channel_manager(data["channel_manager"][0]["name"])
     assert result["name"] == data["channel_manager"][0]["name"]
 
     # test channel_manager not present in the database
     try:
-        datasource.get_channel_manager(channel_manager["name"], channel_manager["channel_manager_id"])
+        datasource.get_channel_manager(channel_manager["name"], channel_manager["component_manager_id"])
     except Exception as e:
         assert e.__class__ == KeyError
 
@@ -116,7 +116,7 @@ def test_get_channel_manager(datasource, channel_manager, data):
 
 def test_get_last_generation_id(datasource, channel_manager, data):
     # test valid channel_manager
-    result = datasource.get_last_generation_id(data["channel_manager"][0]["name"], data["channel_manager"][0]["channel_manager_id"])
+    result = datasource.get_last_generation_id(data["channel_manager"][0]["name"], data["channel_manager"][0]["component_manager_id"])
     assert result == int(data["dataproduct"][0]["generation_id"])
 
     result = datasource.get_last_generation_id(data["channel_manager"][0]["name"])
@@ -124,7 +124,7 @@ def test_get_last_generation_id(datasource, channel_manager, data):
 
     # test channel_manager not present in the database
     try:
-        result = datasource.get_last_generation_id(channel_manager["name"], channel_manager["channel_manager_id"])
+        result = datasource.get_last_generation_id(channel_manager["name"], channel_manager["component_manager_id"])
     except Exception as e:
         assert e.__class__ == KeyError
 
@@ -134,5 +134,5 @@ def test_get_last_generation_id(datasource, channel_manager, data):
         assert e.__class__ == KeyError
 
 def test_insert(datasource, dataproduct, header, metadata):
-    datasource.insert(dataproduct["channel_manager_id"], dataproduct["generation_id"], dataproduct["key"],
+    datasource.insert(dataproduct["component_manager_id"], dataproduct["generation_id"], dataproduct["key"],
                       dataproduct["value"].encode(), header, metadata)

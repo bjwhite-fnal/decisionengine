@@ -81,18 +81,18 @@ class Metadata(UserDict):
 
     # Minimum information required for the Metadata dict to be valid
     required_keys = {
-        'channel_manager_id', 'state', 'generation_id',
+        'component_manager_id', 'state', 'generation_id',
         'generation_time', 'missed_update_count'}
 
     # Valid states
     valid_states = {'NEW', 'START_BACKUP', 'METADATA_UPDATE', 'END_CYCLE'}
 
-    def __init__(self, channel_manager_id, state='NEW', generation_id=None,
+    def __init__(self, component_manager_id, state='NEW', generation_id=None,
                  generation_time=None, missed_update_count=0):
         """
         Initialize Metadata object
 
-        :type channel_manager_id: :obj:`string`
+        :type component_manager_id: :obj:`string`
         :type state: :obj:`string`
         :type generation_id: :obj:`int`
         :type generation_time: :obj:`float`
@@ -106,7 +106,7 @@ class Metadata(UserDict):
             generation_time = time.time()
 
         self.data = {
-            'channel_manager_id': channel_manager_id,
+            'component_manager_id': component_manager_id,
             'state': state,
             'generation_id': generation_id,
             'generation_time': int(generation_time),
@@ -130,19 +130,19 @@ class Header(UserDict):
 
     # Minimum information required for the Header dict to be valid
     required_keys = {
-        'channel_manager_id', 'create_time', 'expiration_time',
+        'component_manager_id', 'create_time', 'expiration_time',
         'scheduled_create_time', 'creator', 'schema_id'
     }
 
     # Default lifetime of the data if the expiration time is not specified
     default_data_lifetime = 1800
 
-    def __init__(self, channel_manager_id, create_time=None, expiration_time=None,
+    def __init__(self, component_manager_id, create_time=None, expiration_time=None,
                  scheduled_create_time=None, creator='module', schema_id=None):
         """
         Initialize Header object
 
-        :type channel_manager_id: :obj:`string`
+        :type component_manager_id: :obj:`string`
         :type create_time: :obj:`float`
         :type expiration_time: :obj:`float`
         :type scheduled_create_time: :obj:`float`
@@ -159,7 +159,7 @@ class Header(UserDict):
             scheduled_create_time = time.time()
 
         self.data = {
-            'channel_manager_id': channel_manager_id,
+            'component_manager_id': component_manager_id,
             'create_time': int(create_time),
             'expiration_time': int(expiration_time),
             'scheduled_create_time': int(scheduled_create_time),
@@ -179,13 +179,13 @@ class Header(UserDict):
 
 class DataBlock(object):
 
-    def __init__(self, dataspace, name, channel_manager_id=None, generation_id=None, sequence_id=None):
+    def __init__(self, dataspace, name, component_manager_id=None, generation_id=None, sequence_id=None):
         """
         Initialize DataBlock object
 
         :type dataspace: :obj:`DataSpace`
         :type name: :obj:`string`
-        :type channel_manager_id: :obj:`string`
+        :type component_manager_id: :obj:`string`
         :type generation_id: :obj:`int`
         """
 
@@ -193,26 +193,26 @@ class DataBlock(object):
         self.logger.debug('Initializing a datablock')
         self.dataspace = dataspace
 
-        # If channel_manager_id is None create new or
-        if channel_manager_id:
-            self.channel_manager_id = channel_manager_id
+        # If component_manager_id is None create new or
+        if component_manager_id:
+            self.component_manager_id = component_manager_id
         else:
-            self.channel_manager_id = ('%s' % uuid.uuid1()).upper()
+            self.component_manager_id = ('%s' % uuid.uuid1()).upper()
         if sequence_id:
             self.sequence_id = sequence_id
         else:
-            self.sequence_id = self.store_channel_manager(name, channel_manager_id)
+            self.sequence_id = self.store_channel_manager(name, component_manager_id)
         if generation_id is not None:
             self.generation_id = generation_id
         else:
             self.generation_id = self.dataspace.get_last_generation_id(
-                name, channel_manager_id)
+                name, component_manager_id)
         self._keys = []
         self.lock = threading.Lock()
 
     def __str__(self):
         value = {
-            'channel_manager_id': self.channel_manager_id,
+            'component_manager_id': self.component_manager_id,
             'generation_id': self.generation_id,
             'sequence_id': self.sequence_id,
             'keys': self._keys,
@@ -229,22 +229,22 @@ class DataBlock(object):
     def keys(self):
         return self._keys
 
-    def store_channel_manager(self, channel_manager_name, channel_manager_id):
+    def store_channel_manager(self, channel_manager_name, component_manager_id):
         """
         Persist ChannelManager, returns sequence number
         :type channel_manager_name: :obj:`string`
-        :type channel_manager_id: :obj: `string`
+        :type component_manager_id: :obj: `string`
         :rtype: :obj:`int`
         """
-        return self.dataspace.store_channel_manager(channel_manager_name, channel_manager_id)
+        return self.dataspace.store_channel_manager(channel_manager_name, component_manager_id)
 
-    def get_channel_manager(self, channel_manager_name, channel_manager_id=None):
+    def get_channel_manager(self, channel_manager_name, component_manager_id=None):
         """
         Retrieve ChannelManager
         :type channel_manager_name: :obj:`string`
         :arg channel_manager_name: name of channel_manager to retrieve
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: id of channel_manager to retrieve
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: id of channel_manager to retrieve
         :rtype: :obj: `dict`
 
         The dictionary returned looks like :
@@ -252,9 +252,9 @@ class DataBlock(object):
                       tzinfo=psycopg2.tz.FixedOffsetTimezone(offset=-360, name=None)),
          'sequence_id': 135L,
          'name': 'AWS_Calculations',
-         'channel_manager_id': '77B16EB5-C79E-45B0-B1B1-37E846692E1D'}
+         'component_manager_id': '77B16EB5-C79E-45B0-B1B1-37E846692E1D'}
         """
-        return self.dataspace.get_channel_manager(channel_manager_name, channel_manager_id)
+        return self.dataspace.get_channel_manager(channel_manager_name, component_manager_id)
 
     def put(self, key, value, header, metadata=None):
         """
@@ -343,7 +343,7 @@ class DataBlock(object):
                     v = value.get("value")
                 result.append({"key": value["key"],
                                "generation_id": value["generation_id"],
-                               "channel_manager_id": value["channel_manager_id"],
+                               "component_manager_id": value["component_manager_id"],
                                "value": v})
         except Exception:
             self.logger.exception("Unexpected error in get_dataproducts")

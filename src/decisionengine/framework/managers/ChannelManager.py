@@ -82,10 +82,6 @@ class ChannelManager(ComponentManager):
         self.current_t0_data_blocks = current_t0_data_blocks
         self.data_updated =  data_updated
         self.lock = threading.Lock()
-        # The rest of this function will go away once the source-proxy
-        # has been reimplemented.
-        for src_runner in self.channel.sources.values():
-            src_runner.runner.post_create(global_config)
 
     def wait_for_all(self, events_done):
         """
@@ -191,38 +187,18 @@ class ChannelManager(ComponentManager):
         ######## OLD SOURCE STARTUP ###################
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Channel Manager {self.id}')
-        done_events, source_threads = self.start_sources(self.data_block_t0)
-        # This is a boot phase
-        # Wait until all sources run at least one time
-        self.wait_for_all(done_events)
         self.wait_for_all_sources(self.all_sources)
         logging.getLogger().info('All sources finished')
-        if not self.state.has_value(State.BOOT):
-            for thread in source_threads:
-                thread.join()
-            logging.getLogger().error(
-                f'Error occured during initial run of sources. Channel Manager {self.name} exits')
-            return
-
-        # Don't need to do this... If everything already ran, then any_ran is true
-        # at the start of the real loop below
-        #self.decision_cycle()
-        #self.reset_source_flags(self.all_sources)
-        ######## END OLD SOURCE STARTUP ###################
 
         self.state.set(State.STEADY)
 
         while not self.state.should_stop():
             try:
-                self.wait_for_any(done_events) # TODO: This should be removed in lieu of the wait for all sources initial runs
                 updated_sources = self.wait_for_any_source(self.all_sources)
                 self.reset_source_flags(updated_sources)
                 self.decision_cycle()
                 if self.state.should_stop():
                     logging.getLogger().info(f'Channel Manager {self.id} received stop signal and exits')
-                    for source in self.channel.sources.values():
-                        source.stop_running.set()
-                        time.sleep(5)
                     for transform in self.channel.transforms.values():
                         transform.stop_running.set()
                         time.sleep(5)
@@ -233,8 +209,6 @@ class ChannelManager(ComponentManager):
                                           self.id, self.get_state_name())
                 break
             time.sleep(1)
-        for thread in source_threads:
-            thread.join()
 
     def do_backup(self):
         """
@@ -297,7 +271,7 @@ class ChannelManager(ComponentManager):
                 logging.getLogger().info(f'Src {src.name} filling header')
                 if data:
                     t = time.time()
-                    header = datablock.Header(self.data_block_t0.channel_manager_id,
+                    header = datablock.Header(self.data_block_t0.component_manager_id,
                                               create_time=t, creator=src.module)
                     logging.getLogger().info(f'Src {src.name} header done')
                     self.data_block_put(data, header, self.data_block_t0)
@@ -397,7 +371,7 @@ class ChannelManager(ComponentManager):
                         data = transform.runner.transform(data_block)
                     logging.getLogger().debug(f'transform returned {data}')
                     t = time.time()
-                    header = datablock.Header(data_block.channel_manager_id,
+                    header = datablock.Header(data_block.component_manager_id,
                                               create_time=t,
                                               creator=transform.name)
                     self.data_block_put(data, header, data_block)
@@ -454,7 +428,7 @@ class ChannelManager(ComponentManager):
 
             data = {'de_logicengine_facts': all_facts}
             t = time.time()
-            header = datablock.Header(data_block.channel_manager_id,
+            header = datablock.Header(data_block.component_manager_id,
                                       create_time=t, creator='logicengine')
             self.data_block_put(data, header, data_block)
         except Exception:  # pragma: no cover

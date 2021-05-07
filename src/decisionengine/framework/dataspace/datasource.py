@@ -45,12 +45,12 @@ class DataSource(object, metaclass=abc.ABCMeta):
         schemas = {
             'channel_manager': [
                 'sequence_id INT',
-                'channel_manager_id TEXT',
+                'component_manager_id TEXT',
                 'name TEXT',
                 'datestamp timestamp with timezone',
             ],
             'header': [
-                'channel_manager_id INT',
+                'component_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'create_time REAL',
@@ -64,7 +64,7 @@ class DataSource(object, metaclass=abc.ABCMeta):
                 'schema BLOB',   # keys in the value dict of the dataproduct table
             ],
             'metadata': [
-                'channel_manager_id INT',
+                'component_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'state TEXT',
@@ -72,7 +72,7 @@ class DataSource(object, metaclass=abc.ABCMeta):
                 'missed_update_count INT',
             ],
             'dataproduct': [
-                'channel_manager_id INT',
+                'component_manager_id INT',
                 'generation_id INT',
                 'key TEXT',
                 'value BLOB'
@@ -100,14 +100,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def insert(self, channel_manager_id, generation_id, key,
+    def insert(self, component_manager_id, generation_id, key,
                value, header, metadata):
         """
         Insert data into respective tables for the given
-        channel_manager_id, generation_id, key
+        component_manager_id, generation_id, key
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -123,14 +123,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def update(self, channel_manager_id, generation_id, key,
+    def update(self, component_manager_id, generation_id, key,
                value, header, metadata):
         """
         Update the data in respective tables for the given
-        channel_manager_id, generation_id, key
+        component_manager_id, generation_id, key
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -146,13 +146,13 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_dataproduct(self, channel_manager_id, generation_id, key):
+    def get_dataproduct(self, component_manager_id, generation_id, key):
         """
         Return the data from the dataproduct table for the given
-        channel_manager_id, generation_id, key
+        component_manager_id, generation_id, key
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -162,24 +162,24 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_dataproducts(self, channel_manager_id):
+    def get_dataproducts(self, component_manager_id):
         """
         Return list of all data products associated with
-        with channel_manager_id
+        with component_manager_id
 
-        :type channel_manager_id: :obj:`string`
+        :type component_manager_id: :obj:`string`
         """
         self.logger.info('datasource is getting all dataproducts for a channel_manager')
         return
 
     @abc.abstractmethod
-    def get_header(self, channel_manager_id, generation_id, key):
+    def get_header(self, component_manager_id, generation_id, key):
         """
         Return the header from the header table for the given
-        channel_manager_id, generation_id, key
+        component_manager_id, generation_id, key
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -189,13 +189,13 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_metadata(self, channel_manager_id, generation_id, key):
+    def get_metadata(self, component_manager_id, generation_id, key):
         """
         Return the metadata from the metadata table for the given
-        channel_manager_id, generation_id, key
+        component_manager_id, generation_id, key
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type key: :obj:`string`
@@ -205,13 +205,13 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_datablock(self, channel_manager_id, generation_id):
+    def get_datablock(self, component_manager_id, generation_id):
         """
         Return the entire datablock from the dataproduct table for the given
-        channel_manager_id, generation_id
+        component_manager_id, generation_id
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         """
@@ -219,14 +219,14 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def duplicate_datablock(self, channel_manager_id, generation_id,
+    def duplicate_datablock(self, component_manager_id, generation_id,
                             new_generation_id):
         """
-        For the given channel_manager_id, make a copy of the datablock with given
+        For the given component_manager_id, make a copy of the datablock with given
         generation_id, set the generation_id for the datablock copy
 
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel_manager_id for generation to be retrieved
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: component_manager_id for generation to be retrieved
         :type generation_id: :obj:`int`
         :arg generation_id: generation_id of the data
         :type new_generation_id: :obj:`int`
@@ -236,15 +236,15 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def get_last_generation_id(self, name, channel_manager_id=None):
+    def get_last_generation_id(self, name, component_manager_id=None):
         """
         Return last generation id for current channel manager
-        or channel_manager w/ channel_manager_id.
+        or channel_manager w/ component_manager_id.
 
         :type name: :obj:`string`
         :arg name: channel manager name
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: channel manager id
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: channel manager id
         """
         self.logger.info('datasource is getting the last generation id for a channel_manager')
         return
@@ -258,13 +258,13 @@ class DataSource(object, metaclass=abc.ABCMeta):
         return
 
     @abc.abstractmethod
-    def store_channel_manager(self, channel_manager_name, channel_manager_id):
+    def store_channel_manager(self, channel_manager_name, component_manager_id):
         """
         Store ChannelManager
         :type channel_manager_name: :obj:`string`
         :arg channel_manager_name: name of channel_manager to retrieve
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: id of channel_manager to retrieve
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: id of channel_manager to retrieve
         """
         self.logger.info('datasource is storing a channel_manager')
         return
@@ -275,20 +275,20 @@ class DataSource(object, metaclass=abc.ABCMeta):
         Retrieve ChannelManagers
         :type channel_manager_name: :obj:`string`
         :arg channel_manager_name: name of channel_manager to retrieve
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: id of channel_manager to retrieve
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: id of channel_manager to retrieve
         """
         self.logger.info('datasource is getting all channel_managers')
         return
 
     @abc.abstractmethod
-    def get_channel_manager(self, channel_manager_name, channel_manager_id):
+    def get_channel_manager(self, channel_manager_name, component_manager_id):
         """
         Retrieve ChannelManager
         :type channel_manager_name: :obj:`string`
         :arg channel_manager_name: name of channel_manager to retrieve
-        :type channel_manager_id: :obj:`string`
-        :arg channel_manager_id: id of channel_manager to retrieve
+        :type component_manager_id: :obj:`string`
+        :arg component_manager_id: id of channel_manager to retrieve
         """
         self.logger.info('datasource is getting a channel_manager')
         return

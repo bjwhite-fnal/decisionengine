@@ -93,18 +93,14 @@ class SourceManager(ComponentManager):
                 ## Process the data block
                 if data:
                     t = time.time()
-                    header = datablock.Header(self.data_block_t0.channel_manager_id,
+                    header = datablock.Header(self.data_block_t0.component_manager_id,
                                               create_time=t, creator=src.module)
                     logging.getLogger().info(f'Source {src.name} header done')
-
-                    # TODO: Make sure we can have data dependencies on other sources that affect the data returned from this source
-                    # if src.has_other_source_deps()
-                    #   other_source_data_block = get_t1_data_block_from_other_source()
-                    # data = data.do_dep_based_processing(data, other_source_data_block)
 
                     # Put the data block into the database
                     self.data_block_put(data, header, self.data_block_t0)
                     logging.getLogger().info(f'Source {src.name} data block put done')
+
                     # Send the datablock to the DecisionEngine process, so that channels can use the info without the database
                     self.data_block_send(self.source.name, data, header)
                     logging.getLogger().info(f'Source {src.name} data block send done')

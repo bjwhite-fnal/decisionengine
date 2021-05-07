@@ -46,40 +46,40 @@ def generate_insert_query(table_name, keys):
 
 
 SELECT_QUERY = """
-SELECT tm.channel_manager_id, foo.* FROM {} foo, channel_manager tm
-WHERE tm.sequence_id = foo.channel_manager_id
-and foo.channel_manager_id=%s AND foo.generation_id=%s AND foo.key=%s
+SELECT tm.component_manager_id, foo.* FROM {} foo, channel_manager tm
+WHERE tm.sequence_id = foo.component_manager_id
+and foo.component_manager_id=%s AND foo.generation_id=%s AND foo.key=%s
 """
 
 SELECT_PRODUCTS = """
-SELECT tm.channel_manager_id, foo.* FROM {} foo, channel_manager tm
-WHERE tm.sequence_id = foo.channel_manager_id
-and foo.channel_manager_id=%s
+SELECT tm.component_manager_id, foo.* FROM {} foo, channel_manager tm
+WHERE tm.sequence_id = foo.component_manager_id
+and foo.component_manager_id=%s
 """
 
 SELECT_LAST_GENERATION_ID_BY_NAME = """
 SELECT max(generation_id)
 FROM dataproduct
-WHERE channel_manager_id = (select  max(sequence_id) from channel_manager where name = %s)
+WHERE component_manager_id = (select  max(sequence_id) from channel_manager where name = %s)
 """
 
 SELECT_LAST_GENERATION_ID_BY_NAME_AND_ID = """
 SELECT max(dp.generation_id)
 FROM dataproduct dp
-JOIN channel_manager tm ON dp.channel_manager_id=tm.sequence_id
+JOIN channel_manager tm ON dp.component_manager_id=tm.sequence_id
 WHERE tm.name=%s
-AND tm.channel_manager_id=%s
+AND tm.component_manager_id=%s
 """
 
 SELECT_CHANNEL_MANAGER_BY_NAME = """
-SELECT tm.name, tm.sequence_id, tm.channel_manager_id, tm.datestamp
+SELECT tm.name, tm.sequence_id, tm.component_manager_id, tm.datestamp
 FROM channel_manager tm where tm.sequence_id =
 (SELECT max(sequence_id) from channel_manager where name = %s);
 """
 
 SELECT_CHANNEL_MANAGER_BY_NAME_AND_ID = """
-SELECT tm.name, tm.sequence_id, tm.channel_manager_id, tm.datestamp
-FROM channel_manager tm where tm.name = %s and tm.channel_manager_id = %s
+SELECT tm.name, tm.sequence_id, tm.component_manager_id, tm.datestamp
+FROM channel_manager tm where tm.name = %s and tm.component_manager_id = %s
 """
 
 DELETE_OLD_DATA_QUERY = """
@@ -94,7 +94,7 @@ class Postgresql(ds.DataSource):
 
     tables = {
         'header': [
-            'channel_manager_id TEXT',
+            'component_manager_id TEXT',
             'generation_id INT',
             'key TEXT',
             'create_time REAL',
@@ -108,7 +108,7 @@ class Postgresql(ds.DataSource):
             'schema BLOB',    # keys in the value dict of the dataproduct table
         ],
         'metadata': [
-            'channel_manager_id TEXT',
+            'component_manager_id TEXT',
             'generation_id INT',
             'key TEXT',
             'state TEXT',
@@ -116,7 +116,7 @@ class Postgresql(ds.DataSource):
             'missed_update_count INT',
         ],
         'dataproduct': [
-            'channel_manager_id TEXT',
+            'component_manager_id TEXT',
             'generation_id INT',
             'key TEXT',
             'value BLOB'
@@ -135,18 +135,18 @@ class Postgresql(ds.DataSource):
     def create_tables(self):
         return True
 
-    def store_channel_manager(self, name, channel_manager_id):
-        return self._update_returning_result("INSERT INTO channel_manager (name, channel_manager_id) values (%s, %s)",
-                                             (name, channel_manager_id)).get('sequence_id')
+    def store_channel_manager(self, name, component_manager_id):
+        return self._update_returning_result("INSERT INTO channel_manager (name, component_manager_id) values (%s, %s)",
+                                             (name, component_manager_id)).get('sequence_id')
 
-    def get_channel_manager(self, channel_manager_name, channel_manager_id=None):
-        if channel_manager_id:
+    def get_channel_manager(self, channel_manager_name, component_manager_id=None):
+        if component_manager_id:
             try:
                 return self._select_dictresult(SELECT_CHANNEL_MANAGER_BY_NAME_AND_ID,
-                                               (channel_manager_name, channel_manager_id))[0]
+                                               (channel_manager_name, component_manager_id))[0]
             except IndexError:
-                raise KeyError("ChannelManager={} channel_manager_id={} not found".format(
-                    channel_manager_name, channel_manager_id))
+                raise KeyError("ChannelManager={} component_manager_id={} not found".format(
+                    channel_manager_name, component_manager_id))
         else:
             try:
                 return self._select_dictresult(SELECT_CHANNEL_MANAGER_BY_NAME,
@@ -162,7 +162,7 @@ class Postgresql(ds.DataSource):
 
         SELECT_CHANNEL_MANAGERS = ("SELECT tm.name, "
                                "tm.sequence_id, "
-                               "tm.channel_manager_id, "
+                               "tm.component_manager_id, "
                                "tm.datestamp "
                                "FROM channel_manager tm ")
 
@@ -192,16 +192,16 @@ class Postgresql(ds.DataSource):
 
     def get_last_generation_id(self,
                                channel_manager_name,
-                               channel_manager_id=None):
-        if channel_manager_id:
+                               component_manager_id=None):
+        if component_manager_id:
             try:
                 generation_id = self._select(SELECT_LAST_GENERATION_ID_BY_NAME_AND_ID,
-                                             (channel_manager_name, channel_manager_id))[0][0]
+                                             (channel_manager_name, component_manager_id))[0][0]
                 assert generation_id
                 return generation_id
             except AssertionError:
-                raise KeyError("Last generation id not found for channel_manager={} channel_manager_id={}".
-                               format(channel_manager_name, channel_manager_id))
+                raise KeyError("Last generation id not found for channel_manager={} component_manager_id={}".
+                               format(channel_manager_name, component_manager_id))
         else:
             try:
                 generation_id = self._select(SELECT_LAST_GENERATION_ID_BY_NAME,
@@ -212,18 +212,18 @@ class Postgresql(ds.DataSource):
                 raise KeyError("Last generation id not found for channel_manager={}".
                                format(channel_manager_name, ))
 
-    def insert(self, channel_manager_id, generation_id, key,
+    def insert(self, component_manager_id, generation_id, key,
                value, header, metadata):
 
         self._insert(ds.DataSource.dataproduct_table,
-                     {'channel_manager_id': channel_manager_id,
+                     {'component_manager_id': component_manager_id,
                       'generation_id': generation_id,
                       'key': key,
                       'value': psycopg2.Binary(value)
                       })
 
         self._insert(ds.DataSource.header_table,
-                     {'channel_manager_id': channel_manager_id,
+                     {'component_manager_id': component_manager_id,
                       'generation_id': generation_id,
                       'key': key,
                       'create_time': header.get('create_time'),
@@ -233,7 +233,7 @@ class Postgresql(ds.DataSource):
                       })
 
         self._insert(ds.DataSource.metadata_table,
-                     {'channel_manager_id': channel_manager_id,
+                     {'component_manager_id': component_manager_id,
                       'generation_id': generation_id,
                       'key': key,
                       'state': metadata.get('state'),
@@ -241,16 +241,16 @@ class Postgresql(ds.DataSource):
                       'missed_update_count': metadata.get('missed_update_count')
                       })
 
-    def update(self, channel_manager_id, generation_id, key,
+    def update(self, component_manager_id, generation_id, key,
                value, header, metadata):
 
         q = """
             UPDATE {} SET value=%s
-                      WHERE channel_manager_id=%s AND generation_id=%s AND key=%s
+                      WHERE component_manager_id=%s AND generation_id=%s AND key=%s
             """.format(ds.DataSource.dataproduct_table)
 
         self._update(q, (psycopg2.Binary(value),
-                         channel_manager_id, generation_id, key))
+                         component_manager_id, generation_id, key))
 
         q = """
         UPDATE {} SET create_time=%s,
@@ -258,102 +258,102 @@ class Postgresql(ds.DataSource):
                       scheduled_create_time=%s,
                       creator=%s,
                       schema_id=%s
-                  WHERE channel_manager_id=%s AND generation_id=%s AND key=%s
+                  WHERE component_manager_id=%s AND generation_id=%s AND key=%s
             """.format(ds.DataSource.header_table)
         self._update(q, (header.get('create_time'),
                          header.get('expiration_time'),
                          header.get('scheduled_create_time'),
                          header.get('creator'), header.get('schema_id'),
-                         channel_manager_id, generation_id, key))
+                         component_manager_id, generation_id, key))
 
         q = """
              UPDATE {} SET state=%s,
                            generation_time=%s,
                            missed_update_count=%s
-                        WHERE channel_manager_id=%s AND generation_id=%s AND key=%s
+                        WHERE component_manager_id=%s AND generation_id=%s AND key=%s
             """.format(ds.DataSource.metadata_table)
         self._update(q, (metadata.get('state'), metadata.get('generation_time'),
                          metadata.get('missed_update_count'),
-                         channel_manager_id, generation_id, key))
+                         component_manager_id, generation_id, key))
 
-    def get_header(self, channel_manager_id, generation_id, key):
+    def get_header(self, component_manager_id, generation_id, key):
         q = SELECT_QUERY.format(ds.DataSource.header_table)
         try:
-            return self._select(q, (channel_manager_id, generation_id, key))[0]
+            return self._select(q, (component_manager_id, generation_id, key))[0]
         except IndexError:
             # do not log stack trace, Exception thrown is handled by the caller
-            raise KeyError("channel_manager_id={} or generation_id={} or key={} not found".format(
-                channel_manager_id, generation_id, key))
+            raise KeyError("component_manager_id={} or generation_id={} or key={} not found".format(
+                component_manager_id, generation_id, key))
 
-    def get_metadata(self, channel_manager_id, generation_id, key):
+    def get_metadata(self, component_manager_id, generation_id, key):
         q = SELECT_QUERY.format(ds.DataSource.metadata_table)
         try:
-            return self._select(q, (channel_manager_id, generation_id, key))[0]
+            return self._select(q, (component_manager_id, generation_id, key))[0]
         except IndexError:
             # do not log stack trace, Exception thrown is handled by the caller
-            raise KeyError("channel_manager_id={} or generation_id={} or key={} not found".format(
-                channel_manager_id, generation_id, key))
+            raise KeyError("component_manager_id={} or generation_id={} or key={} not found".format(
+                component_manager_id, generation_id, key))
 
-    def get_dataproducts(self, channel_manager_id):
+    def get_dataproducts(self, component_manager_id):
         q = SELECT_PRODUCTS.format(ds.DataSource.dataproduct_table)
         try:
             result = []
-            rows = self._select_dictresult(q, (channel_manager_id,))
+            rows = self._select_dictresult(q, (component_manager_id,))
             for row in rows:
                 result.append({'key': row['key'],
-                               'channel_manager_id': row['channel_manager_id'],
+                               'component_manager_id': row['component_manager_id'],
                                'generation_id': row['generation_id'],
                                'value': row['value'].tobytes()})
             return result
         except IndexError:
             # do not log stack trace, Exception thrown is handled by the caller
-            raise KeyError("channel_manager_id={} not found".format(channel_manager_id))
+            raise KeyError("component_manager_id={} not found".format(component_manager_id))
 
-    def get_dataproduct(self, channel_manager_id, generation_id, key):
+    def get_dataproduct(self, component_manager_id, generation_id, key):
         q = SELECT_QUERY.format(ds.DataSource.dataproduct_table)
         try:
-            value_row = self._select_dictresult(q, (channel_manager_id, generation_id, key))[0]
+            value_row = self._select_dictresult(q, (component_manager_id, generation_id, key))[0]
             return value_row['value'].tobytes()
         except IndexError:
             # do not log stack trace, Exception thrown is handled by the caller
-            raise KeyError("channel_manager_id={} or generation_id={} or key={} not found".format(
-                channel_manager_id, generation_id, key))
+            raise KeyError("component_manager_id={} or generation_id={} or key={} not found".format(
+                component_manager_id, generation_id, key))
 
-    def get_datablock(self, channel_manager_id, generation_id):
+    def get_datablock(self, component_manager_id, generation_id):
         return {}
 
-    def duplicate_datablock(self, channel_manager_id, generation_id,
+    def duplicate_datablock(self, component_manager_id, generation_id,
                             new_generation_id):
         for q in ("""
-            INSERT INTO {} (channel_manager_id,
+            INSERT INTO {} (component_manager_id,
                             generation_id,
                             key,
                             value)
-                   SELECT channel_manager_id,
+                   SELECT component_manager_id,
                           %s,
                           key,
                           value
                    FROM {}
-                   WHERE channel_manager_id=%s AND generation_id=%s
+                   WHERE component_manager_id=%s AND generation_id=%s
             """.format(ds.DataSource.dataproduct_table, ds.DataSource.dataproduct_table),
                   """
-            INSERT INTO {} (channel_manager_id,
+            INSERT INTO {} (component_manager_id,
                             generation_id,
                             key,
                             state,
                             generation_time,
                             missed_update_count)
-                   SELECT channel_manager_id,
+                   SELECT component_manager_id,
                           %s,
                           key,
                           state,
                           generation_time,
                           missed_update_count
                    FROM {}
-                   WHERE channel_manager_id=%s AND generation_id=%s
+                   WHERE component_manager_id=%s AND generation_id=%s
             """.format(ds.DataSource.metadata_table, ds.DataSource.metadata_table),
                   """
-            INSERT INTO {} (channel_manager_id,
+            INSERT INTO {} (component_manager_id,
                         generation_id,
                         key,
                         create_time,
@@ -361,7 +361,7 @@ class Postgresql(ds.DataSource):
                         scheduled_create_time,
                         creator,
                         schema_id)
-                 SELECT channel_manager_id,
+                 SELECT component_manager_id,
                         %s,
                         key,
                         create_time,
@@ -370,10 +370,10 @@ class Postgresql(ds.DataSource):
                         creator,
                         schema_id
                  FROM {}
-                 WHERE channel_manager_id=%s
+                 WHERE component_manager_id=%s
                  AND   generation_id=%s
                  """.format(ds.DataSource.header_table, ds.DataSource.header_table)):
-            self._insert(q, (new_generation_id, channel_manager_id, generation_id))
+            self._insert(q, (new_generation_id, component_manager_id, generation_id))
 
     def delete_data_older_than(self, days):
         """

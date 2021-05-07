@@ -165,7 +165,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 try:
                     data_block = datablock.DataBlock(self.dataspace,
                                                      ch,
-                                                     channel_manager_id=cm['channel_manager_id'],
+                                                     component_manager_id=cm['component_manager_id'],
                                                      sequence_id=cm['sequence_id'])
                     data_block.generation_id -= 1
                     df = data_block[product]
@@ -224,7 +224,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 cm = self.dataspace.get_channel_manager(ch)
                 data_block = datablock.DataBlock(self.dataspace,
                                                  ch,
-                                                 channel_manager_id=cm['channel_manager_id'],
+                                                 component_manager_id=cm['component_manager_id'],
                                                  sequence_id=cm['sequence_id'])
                 data_block.generation_id -= 1
                 channel_config = self.channel_config_loader.get_channels()[ch]
