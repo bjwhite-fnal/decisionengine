@@ -4,7 +4,7 @@
       module: "decisionengine.framework.tests.SourceNOP",
       name: "SourceNOP",
       parameters: {},
-      schedule: 1,
+      schedule: 0,
      }
    },
 

@@ -82,11 +82,11 @@ def test_take_channel_manager_offline(mock_data_block):  # noqa: F811
             assert channel_manager.state.has_value(State.OFFLINE)
 
 
-@pytest.mark.usefixtures("mock_data_block")
-def test_failing_publisher(mock_data_block):  # noqa: F811
-    with RunSourceSubscriptionManager() as source_subscription_manager:
-        source_manager = source_manager_for('failing_publisher', source_subscription_manager)
-        channel_manager = channel_manager_for('failing_publisher', source_subscription_manager)
-        source_manager.run()
-        channel_manager.run()
-        assert channel_manager.state.has_value(State.OFFLINE)
+#@pytest.mark.usefixtures("mock_data_block")
+#def test_failing_publisher(mock_data_block):  # noqa: F811
+#    with RunSourceSubscriptionManager() as source_subscription_manager:
+#        source_manager = source_manager_for('failing_publisher', source_subscription_manager)
+#        channel_manager = channel_manager_for('failing_publisher', source_subscription_manager)
+#        source_manager.run()
+#        channel_manager.run()
+#        assert channel_manager.state.has_value(State.OFFLINE)
