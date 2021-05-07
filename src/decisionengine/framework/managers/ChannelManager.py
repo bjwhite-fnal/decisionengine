@@ -253,68 +253,6 @@ class ChannelManager(ComponentManager):
                 logging.getLogger().exception("error in decision cycle(publishers) ")
                 self.take_offline(data_block_t1)
 
-    def run_source(self, src):
-        """
-        Get the data from source
-        and put it into the data block
-
-        :type src: :obj:`~ChannelRunner`
-        :arg src: source ChannelRunner
-        """
-
-        # If channel manager is in offline state, do not keep executing sources.
-        while not self.state.should_stop():
-            try:
-                logging.getLogger().info(f'Src {src.name} calling acquire')
-                data = src.runner.acquire()
-                logging.getLogger().info(f'Src {src.name} acquire retuned')
-                logging.getLogger().info(f'Src {src.name} filling header')
-                if data:
-                    t = time.time()
-                    header = datablock.Header(self.data_block_t0.component_manager_id,
-                                              create_time=t, creator=src.module)
-                    logging.getLogger().info(f'Src {src.name} header done')
-                    self.data_block_put(data, header, self.data_block_t0)
-                    logging.getLogger().info(f'Src {src.name} data block put done')
-                else:
-                    logging.getLogger().warning(f'Src {src.name} acquire retuned no data')
-                src.run_counter += 1
-                src.data_updated.set()
-                logging.getLogger().info(f'Src {src.name} {src.module} finished cycle')
-            except Exception:
-                logging.getLogger().exception(f'Exception running source {src.name} ')
-                self.take_offline(self.data_block_t0)
-            if src.schedule > 0:
-                s = src.stop_running.wait(src.schedule)
-                if s:
-                    logging.getLogger().info(f'received stop_running signal for {src.name}')
-                    break
-            else:
-                logging.getLogger().info(f'source {src.name} runs only once')
-                break
-        logging.getLogger().info(f'stopped {src.name}')
-
-    def start_sources(self, data_block=None):
-        """
-        Start sources, each in a separate thread
-
-        :type data_block: :obj:`~datablock.DataBlock`
-        :arg data_block: data block
-        """
-
-        event_list = []
-        source_threads = []
-
-        for key, source in self.channel.sources.items():
-            logging.getLogger().info(f'starting loop for {key}')
-            event_list.append(source.data_updated)
-            thread = threading.Thread(target=self.run_source,
-                                      name=source.name,
-                                      args=(source,))
-            source_threads.append(thread)
-            # Cannot catch exception from function called in separate thread
-            thread.start()
-        return (event_list, source_threads)
 
     def run_transforms(self, data_block=None):
         """

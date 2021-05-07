@@ -78,9 +78,6 @@ class SourceManager(ComponentManager):
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Source Manager {self.id}')
 
-        # Do an initial run of the Source
-        # Then update the state to Steady
-
         # Then run the work loop to continually update the sources every 'period'
         while not self.state.should_stop():
             try:
