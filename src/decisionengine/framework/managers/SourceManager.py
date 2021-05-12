@@ -69,8 +69,8 @@ class SourceManager(ComponentManager):
         self.data_updated[self.source.name] = False
         self.lock = multiprocessing.Lock()
 
-    def data_block_send(self, source_name, data, header):
-        block_info = (source_name, (data, header))
+    def data_block_send(self, source_id, data, header):
+        block_info = (source_id, (data, header))
         self.data_block_queue.put(block_info)
 
     def run(self):
@@ -98,8 +98,8 @@ class SourceManager(ComponentManager):
                     self.data_block_put(data, header, self.data_block_t0)
                     logging.getLogger().info(f'Source {src.name} data block put done')
 
-                    # Send the datablock to the DecisionEngine process, so that channels can use the info without the database
-                    self.data_block_send(self.source.name, data, header)
+                    # Send the datablock to the DecisionEngine process SubscriptionHandler
+                    self.data_block_send(self.id, data, header)
                     logging.getLogger().info(f'Source {src.name} data block send done')
                 else:
                     logging.getLogger().warning(f'Source {src.name} acquire retuned no data')

@@ -162,6 +162,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                 found = True
                 txt += " Found in channel {}\n".format(ch)
                 cm = self.dataspace.get_channel_manager(ch)
+                import pdb; pdb.set_trace()
                 try:
                     data_block = datablock.DataBlock(self.dataspace,
                                                      ch,
@@ -377,7 +378,8 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                                                channel_config,
                                                self.global_config,
                                                self.source_subscription_manager.current_t0_data_blocks,
-                                               self.source_subscription_manager.data_updated)
+                                               self.source_subscription_manager.data_updated,
+                                               self.source_subscription_manager.channel_subscribed)
         worker = ChannelWorker(channel_manager, self.global_config['logger'])
         with self.channel_workers.access() as workers:
             workers[channel_name] = worker

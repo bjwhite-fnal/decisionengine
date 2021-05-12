@@ -13,6 +13,7 @@ from decisionengine.framework.dataspace import datablock
 from decisionengine.framework.managers.ComponentManager import create_runner, ComponentManager
 from decisionengine.framework.managers.ProcessingState import State
 from decisionengine.framework.managers.ProcessingState import ProcessingState
+from decisionengine.framework.managers.SourceSubscriptionManager import Subscription
 
 _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
@@ -74,13 +75,15 @@ class ChannelManager(ComponentManager):
     Channel Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks, data_updated):
+    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks, data_updated, subscribe_queue, channel_subscribed):
         super().__init__(name, generation_id, global_config)
 
         self.all_sources = list(channel_dict['sources'].keys())
         self.channel = Channel(channel_dict)
         self.current_t0_data_blocks = current_t0_data_blocks
         self.data_updated =  data_updated
+        self.subscribe_queue = subscribe_queue
+        self.channel_subscribed = channel_subscribed
         self.lock = threading.Lock()
 
     def wait_for_all(self, events_done):
@@ -180,15 +183,32 @@ class ChannelManager(ComponentManager):
         for source in sources:
             self.data_updated[source] = False
 
+    def register_with_sources(self, channel_id, all_sources):
+        sub = SourceSubscriptionManager.Subscription(
+            channel_id,
+            all_sources
+        )
+        self.subscribe_queue.append(sub)
+
+    def wait_for_registration(self, channel_id):
+        has_registered = self.channel_subscribed[channel_id]
+        while not has_registered: 
+            time.sleep(1)
+
+
     def run(self):
         """
         Channel Manager main loop
         """
-        ######## OLD SOURCE STARTUP ###################
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Channel Manager {self.id}')
         self.wait_for_all_sources(self.all_sources)
         logging.getLogger().info('All sources finished')
+
+        logging.getLogger().info(f'Registering Channel Manager {self.id} source subscriptions')
+        self.register_with_sources(self.id, self.all_sources)
+        self.wait_for_registration(self.id)
+        logging.getLogger().info(f'Registered Channel manager {self.id} for sources ')
 
         self.state.set(State.STEADY)
 
