@@ -75,12 +75,11 @@ class ChannelManager(ComponentManager):
     Channel Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, channel_dict, global_config, current_t0_data_blocks, data_updated, subscribe_queue, channel_subscribed):
+    def __init__(self, name, generation_id, channel_dict, global_config, data_updated, subscribe_queue, channel_subscribed):
         super().__init__(name, generation_id, global_config)
 
         self.all_sources = list(channel_dict['sources'].keys())
         self.channel = Channel(channel_dict)
-        self.current_t0_data_blocks = current_t0_data_blocks
         self.data_updated =  data_updated
         self.subscribe_queue = subscribe_queue
         self.channel_subscribed = channel_subscribed
@@ -186,7 +185,8 @@ class ChannelManager(ComponentManager):
     def register_with_sources(self, channel_id, all_sources):
         sub = SourceSubscriptionManager.Subscription(
             channel_id,
-            all_sources
+            all_sources,
+            self.data_block_t0
         )
         self.subscribe_queue.append(sub)
 

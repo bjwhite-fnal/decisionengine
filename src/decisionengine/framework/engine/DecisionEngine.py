@@ -377,8 +377,8 @@ class DecisionEngine(socketserver.ThreadingMixIn,
                                                generation_id,
                                                channel_config,
                                                self.global_config,
-                                               self.source_subscription_manager.current_t0_data_blocks,
                                                self.source_subscription_manager.data_updated,
+                                               self.source_subscription_manager.subscribe_queue,
                                                self.source_subscription_manager.channel_subscribed)
         worker = ChannelWorker(channel_manager, self.global_config['logger'])
         with self.channel_workers.access() as workers:

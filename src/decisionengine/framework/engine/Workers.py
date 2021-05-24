@@ -74,7 +74,6 @@ class SourceWorker(Worker):
         super().__init__(source_manager, logger_config)
 
     def run(self):
-        # TODO: Make this start up the source so that it works similarly to the way we start a channel
         self.configure_logging()
         self.manager.run()
 
