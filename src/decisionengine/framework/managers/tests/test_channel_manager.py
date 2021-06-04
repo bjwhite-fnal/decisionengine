@@ -30,10 +30,11 @@ def source_manager_for(name, source_subscription_manager):
         data_block_queue, data_updated)
 
 def channel_manager_for(name, source_subscription_manager):
-    current_t0_data_blocks = source_subscription_manager.current_t0_data_blocks
     data_updated = source_subscription_manager.data_updated
+    subscribe_queue = source_subscription_manager.subscribe_queue
+    channel_subscribed = source_subscription_manager.channel_subscribed
     return ChannelManager(name, 1, channel_config(name), _global_config,
-        current_t0_data_blocks, data_updated)
+        data_updated, subscribe_queue, channel_subscribed)
 
 class RunSourceSubscriptionManager:
     def __init__(self):
@@ -82,11 +83,11 @@ def test_take_channel_manager_offline(mock_data_block):  # noqa: F811
             assert channel_manager.state.has_value(State.OFFLINE)
 
 
-#@pytest.mark.usefixtures("mock_data_block")
-#def test_failing_publisher(mock_data_block):  # noqa: F811
-#    with RunSourceSubscriptionManager() as source_subscription_manager:
-#        source_manager = source_manager_for('failing_publisher', source_subscription_manager)
-#        channel_manager = channel_manager_for('failing_publisher', source_subscription_manager)
-#        source_manager.run()
-#        channel_manager.run()
-#        assert channel_manager.state.has_value(State.OFFLINE)
+@pytest.mark.usefixtures("mock_data_block")
+def test_failing_publisher(mock_data_block):  # noqa: F811
+    with RunSourceSubscriptionManager() as source_subscription_manager:
+        source_manager = source_manager_for('failing_publisher', source_subscription_manager)
+        channel_manager = channel_manager_for('failing_publisher', source_subscription_manager)
+        source_manager.run()
+        channel_manager.run()
+        assert channel_manager.state.has_value(State.OFFLINE)

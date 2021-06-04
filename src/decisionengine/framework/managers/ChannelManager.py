@@ -75,7 +75,9 @@ class ChannelManager(ComponentManager):
     Channel Manager: Runs decision cycle for transforms and publishers
     """
 
-    def __init__(self, name, generation_id, channel_dict, global_config, data_updated, subscribe_queue, channel_subscribed):
+    def __init__(self, name, generation_id, channel_dict, global_config, \
+        data_updated, subscribe_queue, channel_subscribed):
+
         super().__init__(name, generation_id, global_config)
 
         self.all_sources = list(channel_dict['sources'].keys())
