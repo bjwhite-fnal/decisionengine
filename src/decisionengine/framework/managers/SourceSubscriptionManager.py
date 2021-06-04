@@ -67,6 +67,12 @@ class SourceSubscriptionManager(threading.Thread):
                                           generation_id=channel_block.generation_id)
             for key, product in source_data.items():
                 channel_block.put(key, product, source_header, metadata=metadata)
+                # TODO: There has to be a better way to do this than inserting a new datablock into the DB
+                # Might need to modify duplicate() to have a read only mode
+                #updated_cache_block = channel_block.duplicate()
+                #self.channel_data_blocks[channel_id] = updated_cache_block
+
+                # Now update the channel that the Source has run
         
 
     def run(self):
@@ -91,5 +97,5 @@ class SourceSubscriptionManager(threading.Thread):
                     self.sources[source_name].append(source_id)
                     
                 # Update data blocks in DB for channels with new source data blocks
-                for channel in self.source_subscriptions[source_name]:
-                    self.update_block_for_subscribed_channel(channel, source_id, data, header)
+                for channel_id in self.source_subscriptions[source_name]:
+                    self.update_block_for_subscribed_channel(channel_id, source_id, data, header)
