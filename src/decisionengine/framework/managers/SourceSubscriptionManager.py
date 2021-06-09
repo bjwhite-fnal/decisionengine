@@ -13,9 +13,8 @@ import threading
 import multiprocessing
 
 class Subscription:
-    def __init__(self, channel_manager_id, channel_name, sources, channel_data_block):
+    def __init__(self, channel_manager_id, sources, channel_data_block):
         self.channel_manager_id = channel_manager_id
-        self.channel_name = channel_name
         self.sources = sources
         self.channel_data_block = channel_data_block
 

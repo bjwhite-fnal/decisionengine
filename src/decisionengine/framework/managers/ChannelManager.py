@@ -78,6 +78,7 @@ class ChannelManager(ComponentManager):
     def __init__(self, name, generation_id, channel_dict, global_config, \
         data_updated, subscribe_queue, channel_subscribed):
 
+
         super().__init__(name, generation_id, global_config)
 
         self.all_sources = list(channel_dict['sources'].keys())
@@ -85,6 +86,7 @@ class ChannelManager(ComponentManager):
         self.data_updated =  data_updated
         self.subscribe_queue = subscribe_queue
         self.channel_subscribed = channel_subscribed
+        self.channel_subscribed[self.id] = False
         self.lock = threading.Lock()
 
     def wait_for_all(self, events_done):
@@ -185,12 +187,13 @@ class ChannelManager(ComponentManager):
             self.data_updated[source] = False
 
     def register_with_sources(self, channel_id, all_sources):
-        sub = SourceSubscriptionManager.Subscription(
+        sub = Subscription(
             channel_id,
             all_sources,
             self.data_block_t0
         )
-        self.subscribe_queue.append(sub)
+        import pdb; pdb.set_trace()
+        self.subscribe_queue.put(sub)
 
     def wait_for_registration(self, channel_id):
         has_registered = self.channel_subscribed[channel_id]
@@ -204,13 +207,14 @@ class ChannelManager(ComponentManager):
         """
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Channel Manager {self.id}')
-        self.wait_for_all_sources(self.all_sources)
-        logging.getLogger().info('All sources finished')
-
         logging.getLogger().info(f'Registering Channel Manager {self.id} source subscriptions')
         self.register_with_sources(self.id, self.all_sources)
         self.wait_for_registration(self.id)
         logging.getLogger().info(f'Registered Channel manager {self.id} for sources ')
+
+        self.wait_for_all_sources(self.all_sources)
+        logging.getLogger().info('All sources finished')
+
 
         self.state.set(State.STEADY)
 

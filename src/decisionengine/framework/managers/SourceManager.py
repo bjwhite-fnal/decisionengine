@@ -94,8 +94,7 @@ class SourceManager(ComponentManager):
                 ## Process the data block
                 if data:
                     t = time.time()
-                    header = datablock.Header(self.data_block_t0.component_manager_id,
-                                              create_time=t, creator=src.module)
+                    header = datablock.Header(self.id, create_time=t, creator=src.module)
                     logging.getLogger().info(f'Source {src.name} header done')
 
                     # Send the datablock to the DecisionEngine process SubscriptionHandler
