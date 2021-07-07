@@ -48,13 +48,15 @@ class SourceSubscriptionManager(threading.Thread):
             new_subscription = self.subscribe_queue.get(block=False)
             sub_name = new_subscription.channel_manager_name
             sub_id = new_subscription.channel_manager_id
-            channel_data_block = datablock.DataBlock(self.dataspace, name, self.id, generation_id) # Create a DataBlock for per channel dataspace interface access
-            self.channel_data_blocks[new_subscription.channel_id] = channel_data_block
+            channel_data_block = datablock.DataBlock(self.dataspace, sub_name, sub_id, generation_id) # Create a DataBlock for per channel dataspace interface access
+            self.channel_data_blocks[sub_id] = channel_data_block
 
             for source in new_subscription.sources:
-                self.source_subscriptions[source].append(new_subscription.channel_id)
+                self.source_subscriptions[source].append(sub_id)
         except queue.Empty:
             pass
+        else:
+            self.channel_subscribed[sub_id] = True
 
     def update_block_for_subscribed_channel(self, channel_id, source_id, source_data, source_header):
         """
@@ -80,7 +82,7 @@ class SourceSubscriptionManager(threading.Thread):
         
 
     def run(self):
-        while self.keep_running.value:
+        while self.keep_running:
             # Check for subscriptions
             self.get_new_subscriptions()
 

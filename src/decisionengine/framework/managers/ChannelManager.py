@@ -19,7 +19,7 @@ _TRANSFORMS_TO = 300  # 5 minutes
 _DEFAULT_SCHEDULE = 300  # ""
 
 
-class ChannelRunner:
+class TaskRunner:
     """
     Provides interface to loadable modules and events for synchronization of execution
     """
@@ -44,7 +44,7 @@ class ChannelRunner:
 
 
 def _make_runners_for(configs):
-    return {name: ChannelRunner(e) for name, e in configs.items()}
+    return {name: TaskRunner(e) for name, e in configs.items()}
 
 
 class Channel:
@@ -59,8 +59,6 @@ class Channel:
         :arg channel_dict: channel configuration
         """
 
-        logging.getLogger("decision_engine").debug('Creating channel source')
-        self.sources = _make_runners_for(channel_dict['sources'])
         logging.getLogger("decision_engine").debug('Creating channel transform')
         self.transforms = _make_runners_for(channel_dict['transforms'])
         logging.getLogger("decision_engine").debug('Creating channel logicengine')
@@ -186,9 +184,10 @@ class ChannelManager(ComponentManager):
         for source in sources:
             self.data_updated[source] = False
 
-    def register_with_sources(self, channel_id, all_sources):
+    def register_with_sources(self, channel_id, channel_name, all_sources):
         sub = Subscription(
             channel_id,
+            channel_name,
             all_sources
         )
         self.subscribe_queue.put(sub)
@@ -197,6 +196,7 @@ class ChannelManager(ComponentManager):
         has_registered = self.channel_subscribed[channel_id]
         while not has_registered: 
             time.sleep(1)
+            has_registered = self.channel_subscribed[channel_id]
 
 
     def run(self):
@@ -206,7 +206,7 @@ class ChannelManager(ComponentManager):
         logging.getLogger().setLevel(self.loglevel.value)
         logging.getLogger().info(f'Starting Channel Manager {self.id}')
         logging.getLogger().info(f'Registering Channel Manager {self.id} source subscriptions')
-        self.register_with_sources(self.id, self.all_sources)
+        self.register_with_sources(self.id, self.name, self.all_sources)
         self.wait_for_registration(self.id)
         logging.getLogger().info(f'Registered Channel manager {self.id} for sources ')
 
@@ -313,8 +313,8 @@ class ChannelManager(ComponentManager):
         """
         Run a transform
 
-        :type transform: :obj:`~ChannelRunner`
-        :arg transform: source ChannelRunner
+        :type transform: :obj:`~TaskRunner`
+        :arg transform: source TaskRunner
         :type data_block: :obj:`~datablock.DataBlock`
         :arg data_block: data block
         """

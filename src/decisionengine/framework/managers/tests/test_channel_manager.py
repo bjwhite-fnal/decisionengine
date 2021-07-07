@@ -7,6 +7,7 @@ import pytest
 import decisionengine.framework.config.policies as policies
 from decisionengine.framework.config.ValidConfig import ValidConfig
 from decisionengine.framework.dataspace.datasources.tests.fixtures import mock_data_block  # noqa: F401
+from decisionengine.framework.dataspace import dataspace
 from decisionengine.framework.managers.ChannelManager import ChannelManager, State
 from decisionengine.framework.managers.SourceManager import SourceManager
 from decisionengine.framework.managers.SourceSubscriptionManager import SourceSubscriptionManager
@@ -21,7 +22,8 @@ def channel_config(name):
     return ValidConfig(os.path.join(_CHANNEL_CONFIG_DIR, name + '.jsonnet'))
 
 def source_subscription_manager_for():
-    return SourceSubscriptionManager()
+    test_dataspace = dataspace.DataSpace(_global_config) 
+    return SourceSubscriptionManager(test_dataspace)
 
 def source_manager_for(name, source_subscription_manager):
     data_block_queue = source_subscription_manager.data_block_queue
@@ -53,12 +55,12 @@ class RunSourceSubscriptionManager:
 
 class RunChannel:
     def __init__(self, name, source_subscription_manager):
-        self._tm = channel_manager_for(name, source_subscription_manager)
-        self._thread = threading.Thread(target=self._tm.run)
+        self._cm = channel_manager_for(name, source_subscription_manager)
+        self._thread = threading.Thread(target=self._cm.run)
 
     def __enter__(self):
         self._thread.start()
-        return self._tm
+        return self._cm
 
     def __exit__(self, type, value, traceback):
         if type:
