@@ -189,10 +189,8 @@ class ChannelManager(ComponentManager):
     def register_with_sources(self, channel_id, all_sources):
         sub = Subscription(
             channel_id,
-            all_sources,
-            self.data_block_t0
+            all_sources
         )
-        import pdb; pdb.set_trace()
         self.subscribe_queue.put(sub)
 
     def wait_for_registration(self, channel_id):
@@ -214,9 +212,10 @@ class ChannelManager(ComponentManager):
 
         self.wait_for_all_sources(self.all_sources)
         logging.getLogger().info('All sources finished')
-
-
         self.state.set(State.STEADY)
+
+        # Should a decision cycle be automatically started at this point?
+        #self.decision_cycle()
 
         while not self.state.should_stop():
             try:

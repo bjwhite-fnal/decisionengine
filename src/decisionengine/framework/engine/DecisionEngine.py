@@ -64,7 +64,7 @@ class DecisionEngine(socketserver.ThreadingMixIn,
         self.reaper = dataspace.Reaper(self.global_config)
         self.logger.info("DecisionEngine started on {}".format(server_address))
 
-        self.source_subscription_manager = SourceSubscriptionManager.SourceSubscriptionManager()
+        self.source_subscription_manager = SourceSubscriptionManager.SourceSubscriptionManager(self.dataspace)
         self.source_subscription_manager.start()
         self.logger.info("DecisionEngine SourceSubscriptionManager started in thread {}".format(self.source_subscription_manager.ident))
 
