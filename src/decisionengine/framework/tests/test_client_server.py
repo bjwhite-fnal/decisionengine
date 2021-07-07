@@ -13,7 +13,7 @@ deserver = DEServer(conf_path=TEST_CONFIG_PATH, channel_conf_path=TEST_CHANNEL_C
 
 @pytest.mark.usefixtures("deserver")
 def test_client_status_msg_to_stdout(deserver):
-    """Make sure the actuall client console call goes to stdout"""
+    """Make sure the actual client console call goes to stdout"""
     import decisionengine.framework.engine.de_client as de_client
 
     myoutput = io.StringIO()
